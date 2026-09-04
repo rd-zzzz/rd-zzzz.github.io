@@ -1,0 +1,1 @@
+import{n as e,t}from"./lightbox.DkcVnDW6.js";document.readyState===`complete`?(e(),t()):window.addEventListener(`load`,()=>{e(),t()});

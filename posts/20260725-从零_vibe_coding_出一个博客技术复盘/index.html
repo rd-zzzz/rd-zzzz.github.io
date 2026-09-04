@@ -1,0 +1,365 @@
+<!DOCTYPE html><html lang="zh-CN" data-astro-cid-z4jru4n3><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- 主题初始化：必须放在任何样式表之前同步执行，避免深色模式导航新页面时白闪（FOUC） --><script>
+      (function() {
+        var stored = null;
+        try { stored = localStorage.getItem('theme'); } catch (e) {}
+        // 默认深夜模式：仅当用户手动选择过浅色（localStorage.theme === 'light'）时才浅色，
+        // 未设置过的一律深色（不再跟随系统 prefers-color-scheme）
+        if (stored !== 'light') {
+          document.documentElement.classList.add('dark');
+        }
+        // 原生跨文档 View Transitions 过渡期间，首帧按主题设置根元素颜色方案，
+        // 避免新页面以浅色背景渲染一瞬（旧页淡出/新页淡入交叠时的背景色闪变）
+        document.documentElement.style.colorScheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      })();
+    </script><!-- 阅读偏好初始化（字号 + 字体族）：紧随主题脚本，样式渲染前落位，防字体族切换闪变 --><script>
+  (function () {
+    // 字号：与 TypoControls 同口径夹取到 [13,28]（越界脏值也夹取而非忽略），
+    // 保证首帧生效字号与面板显示值一致；非法/缺失时保持浏览器默认 16px。
+    // 写入 --read-fs 变量而非根字号：根字号会带动全站 rem（顶栏按钮/徽章等 UI
+    // 一起膨胀变形），变量只有正文容器消费（见 global.css），兑现"仅作用于正文排版"
+    try {
+      var fs = parseInt(localStorage.getItem('fontSize'), 10);
+      if (!isNaN(fs)) {
+        fs = Math.min(28, Math.max(13, fs));
+        document.documentElement.style.setProperty('--read-fs', fs + 'px');
+      }
+    } catch (e) {}
+    // 字体族：仅 serif 需要显式标记，sans 为默认（不设属性）
+    try {
+      var ff = localStorage.getItem('fontFamily');
+      if (ff === 'serif') {
+        document.documentElement.setAttribute('data-font', ff);
+      }
+    } catch (e) {}
+    // 正文字重：仅加粗需显式标记，常规为默认（不设属性）
+    try {
+      if (localStorage.getItem('fontBold') === '1') {
+        document.documentElement.setAttribute('data-font-bold', '');
+      }
+    } catch (e) {}
+  })();
+</script><!-- 兜底：样式表尚未加载时，根元素背景与主题一致，防止白闪 --><style>
+      html { background-color: #f8f7f5; }
+      html.dark { background-color: #121212; }
+    </style><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="preload" href="/fonts/fonts.css" as="style"><link rel="stylesheet" href="/fonts/fonts.css"><title>从零 Vibe Coding 出一个博客：技术复盘 — Rodney Zhang&#39;s Blog</title><meta name="description" content="用 Astro 加 Tailwind CSS 从零搭建个人博客的完整复盘，聊架构决策、核心功能实现，以及 Vibe Coding 这套工作流。"><link rel="canonical" href="https://rodneyzhang.com/posts/20260725-%E4%BB%8E%E9%9B%B6_vibe_coding_%E5%87%BA%E4%B8%80%E4%B8%AA%E5%8D%9A%E5%AE%A2%E6%8A%80%E6%9C%AF%E5%A4%8D%E7%9B%98/"><!-- 站点验证：百度 + Google（meta 标签方式，避免 Cloudflare Pages 对 .html 的 308 跳转导致文件验证失败） --><meta name="baidu-site-verification" content="codeva-LFlrP7rYFV"><meta name="google-site-verification" content="google8a09aa7dbeeba943"><meta property="og:title" content="从零 Vibe Coding 出一个博客：技术复盘 — Rodney Zhang's Blog"><meta property="og:description" content="用 Astro 加 Tailwind CSS 从零搭建个人博客的完整复盘，聊架构决策、核心功能实现，以及 Vibe Coding 这套工作流。"><meta property="og:image" content="https://rodneyzhang.com/images/og-default.png"><meta property="og:url" content="https://rodneyzhang.com/posts/20260725-%E4%BB%8E%E9%9B%B6_vibe_coding_%E5%87%BA%E4%B8%80%E4%B8%AA%E5%8D%9A%E5%AE%A2%E6%8A%80%E6%9C%AF%E5%A4%8D%E7%9B%98/"><meta property="og:type" content="article"><meta property="og:site_name" content="Rodney Zhang's Blog"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="从零 Vibe Coding 出一个博客：技术复盘 — Rodney Zhang's Blog"><meta name="twitter:description" content="用 Astro 加 Tailwind CSS 从零搭建个人博客的完整复盘，聊架构决策、核心功能实现，以及 Vibe Coding 这套工作流。"><meta name="twitter:image" content="https://rodneyzhang.com/images/og-default.png"><link rel="alternate" type="application/rss+xml" title="Rodney Zhang's Blog" href="https://rodneyzhang.com/rss.xml"><!-- 隐藏的作者信息：不参与页面可见渲染，仅供搜索引擎抓取建立人名↔站点关联 --><meta name="author" content="张偌迪"><!-- 隐藏关键词：完全不渲染给访客，Google 已不采用，但百度仍给轻微权重，覆盖人名/博客写法与主题 --><meta name="keywords" content="张偌迪,张偌迪的博客,Rodney Zhang,Zhang Ruodi,Rodney Zhang's Blog,个人博客,独立博客,随笔,随想,思考,AI,笔记"><script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"张偌迪","alternateName":["Rodney Zhang","Zhang Ruodi","张偌迪的博客","Rodney Zhang's Blog"],"url":"https://rodneyzhang.com/","description":"张偌迪（Rodney Zhang）的个人独立博客，记录随笔、随想、思考、AI 与笔记等内容。","sameAs":["https://github.com/rd-zzzz"]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"张偌迪的博客","alternateName":["Rodney Zhang Blog","Rodney Zhang's Blog"],"url":"https://rodneyzhang.com/","inLanguage":"zh-CN","author":{"@type":"Person","name":"张偌迪","url":"https://rodneyzhang.com/"}}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"从零 Vibe Coding 出一个博客：技术复盘","description":"用 Astro 加 Tailwind CSS 从零搭建个人博客的完整复盘，聊架构决策、核心功能实现，以及 Vibe Coding 这套工作流。","datePublished":"2026-07-25T00:00:00.000Z","dateModified":"2026-07-25T00:00:00.000Z","author":{"@type":"Person","name":"张偌迪","url":"https://rodneyzhang.com/"},"publisher":{"@type":"Person","name":"张偌迪"},"image":"https://rodneyzhang.com/images/og-default.png","wordCount":6090,"mainEntityOfPage":"https://rodneyzhang.com/posts/20260725-%E4%BB%8E%E9%9B%B6_vibe_coding_%E5%87%BA%E4%B8%80%E4%B8%AA%E5%8D%9A%E5%AE%A2%E6%8A%80%E6%9C%AF%E5%A4%8D%E7%9B%98/","inLanguage":"zh-CN"}</script><style>.reading-time[data-astro-cid-ruv7hgo6]{color:var(--text-disable)}.prose-custom[data-astro-cid-ruv7hgo6]{font-size:calc(var(--read-fs,1rem) * 1.0625);max-width:70ch;margin-inline:auto;line-height:1.85}.prose-custom[data-astro-cid-ruv7hgo6] p[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] li[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] blockquote[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h1[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h2[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h3[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h4[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h5[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h6[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] figcaption[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] th[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] td[data-astro-cid-ruv7hgo6]{letter-spacing:.05em}.prose-custom[data-astro-cid-ruv7hgo6] pre[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] code[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] img[data-astro-cid-ruv7hgo6]{letter-spacing:0}.post-nav[data-astro-cid-ruv7hgo6]{gap:16px;display:flex}.post-nav-item[data-astro-cid-ruv7hgo6]{border:1px solid var(--line-light);border-radius:8px;flex-direction:column;flex:1;gap:4px;padding:12px 16px;text-decoration:none;transition:background .2s,border-color .2s;display:flex}.post-nav-item[data-astro-cid-ruv7hgo6]:hover{background:var(--hover-bg);border-color:var(--text-subtle)}.post-nav-next[data-astro-cid-ruv7hgo6]{text-align:right}.post-nav-label[data-astro-cid-ruv7hgo6]{color:var(--text-subtle);font-size:12px}.post-nav-title[data-astro-cid-ruv7hgo6]{color:var(--text-emphasize);text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:500;overflow:hidden}@media (width<=640px){.post-nav[data-astro-cid-ruv7hgo6]{flex-direction:column}.post-nav-next[data-astro-cid-ruv7hgo6]{text-align:left}}
+</style><link rel="stylesheet" href="/_astro/global.DJwx9az_.css"><style>.article-body[data-astro-cid-z4jru4n3]{-webkit-font-smoothing:antialiased;background:var(--bg);height:100vh;color:var(--text-emphasize);font-family:Inter,Noto Sans SC,system-ui,sans-serif;overflow:hidden}.article-container[data-astro-cid-z4jru4n3]{flex-direction:column;height:100%;display:flex}.topbar[data-astro-cid-z4jru4n3]{border-bottom:1px solid var(--line-light);background:var(--bg);flex-shrink:0;justify-content:space-between;align-items:center;padding:14px 24px;display:flex}.topbar-left[data-astro-cid-z4jru4n3]{align-items:center;gap:12px;display:flex}.breadcrumb[data-astro-cid-z4jru4n3]{color:var(--text-subtle);border-radius:6px;padding:4px 6px;font-size:14px;font-weight:500;text-decoration:none;transition:color .2s,background-color .2s}.breadcrumb[data-astro-cid-z4jru4n3]:hover{color:var(--text-emphasize);background:var(--hover-bg)}.topbar-right[data-astro-cid-z4jru4n3]{align-items:center;gap:8px;display:flex}.back-link[data-astro-cid-z4jru4n3]{color:var(--text-subtle);border-radius:6px;padding:4px 8px;font-size:13px;text-decoration:none;transition:color .2s,background-color .2s}.back-link[data-astro-cid-z4jru4n3]:hover{color:var(--text-emphasize);background:var(--hover-bg)}.topbar-link[data-astro-cid-z4jru4n3]{color:var(--text-subtle);border-radius:6px;padding:6px 12px;font-size:14px;text-decoration:none;transition:color .2s,background-color .2s}.topbar-link[data-astro-cid-z4jru4n3]:hover{color:var(--text-emphasize);background:var(--hover-bg)}.topbar-icon-btn[data-astro-cid-z4jru4n3]{width:32px;height:32px;color:var(--text-subtle);cursor:pointer;background:0 0;border:none;border-radius:6px;flex-shrink:0;justify-content:center;align-items:center;transition:color .2s,background-color .2s;display:flex}.topbar-icon-btn[data-astro-cid-z4jru4n3]:hover{color:var(--text-emphasize);background:var(--hover-bg)}.main-container[data-astro-cid-z4jru4n3]{flex:1;overflow:hidden}.main-content[data-astro-cid-z4jru4n3]{height:100%;padding:24px;overflow:hidden auto}.main-content[data-astro-cid-z4jru4n3]:focus{outline:none}@media (width<=768px){.article-body[data-astro-cid-z4jru4n3]{height:auto;overflow:auto}.topbar[data-astro-cid-z4jru4n3]{z-index:100;position:sticky;top:0}.article-container[data-astro-cid-z4jru4n3]{height:auto}.main-container[data-astro-cid-z4jru4n3]{overflow:visible}.main-content[data-astro-cid-z4jru4n3]{padding:16px;overflow:visible}}.reading-progress[data-astro-cid-z4jru4n3]{background:linear-gradient(90deg, var(--green), var(--contribution-level4));clip-path:inset(0 100% 0 0);z-index:1001;pointer-events:none;width:100%;height:4px;position:fixed;top:0;left:0}.back-to-top[data-astro-cid-z4jru4n3]{border:1px solid var(--line-light);background:var(--card-bg);width:40px;height:40px;color:var(--text-emphasize);cursor:pointer;opacity:0;pointer-events:none;z-index:1000;border-radius:50%;justify-content:center;align-items:center;transition:opacity .25s,background-color .2s;display:flex;position:fixed;bottom:24px;right:24px;box-shadow:0 2px 10px #00000040}.back-to-top[data-astro-cid-z4jru4n3]:hover{background:var(--hover-bg)}
+</style></head><body class="article-body" data-astro-cid-z4jru4n3><div class="article-container" data-astro-cid-z4jru4n3><!-- 顶栏 --><div class="topbar" data-astro-cid-z4jru4n3><div class="topbar-left" data-astro-cid-z4jru4n3><a href="/" class="breadcrumb" data-astro-cid-z4jru4n3>Rodney Zhang's Blog</a><a href="/" class="back-link" data-astro-cid-z4jru4n3>← 返回</a></div><div class="topbar-right" data-astro-cid-z4jru4n3><div class="typo-wrap"><button class="topbar-icon-btn typo-btn" id="typoBtn" type="button" aria-label="排版设置" aria-haspopup="true" aria-expanded="false" aria-controls="typoPop" title="排版设置"><!-- Aa 用字体渲染文本（与原 A−/A+ 按钮同机制，hinting 锐利不糊）；
+         font-size 22px → cap 高 ≈15.8px，与太阳图标整体（16.5px）像素对齐 --><span class="typo-btn-glyph" aria-hidden="true">Aa</span></button><div class="typo-pop" id="typoPop" role="group" aria-label="阅读偏好" tabindex="-1"><div class="typo-row"><span class="typo-label">字号</span><button class="typo-step" id="fontDecrease" type="button" aria-label="减小字号">−</button><span class="typo-size" id="typoSizeVal">16</span><button class="typo-step" id="fontIncrease" type="button" aria-label="增大字号">+</button></div><div class="typo-row"><span class="typo-label">字体</span><div class="typo-seg" id="fontFamilySeg" role="radiogroup" aria-label="正文字体"><button class="typo-seg-item active" data-font="sans" type="button" role="radio" aria-checked="true">无衬线</button><button class="typo-seg-item" data-font="serif" type="button" role="radio" aria-checked="false">衬线</button></div></div><div class="typo-row"><span class="typo-label">加粗</span><div class="typo-seg" id="fontBoldSeg" role="radiogroup" aria-label="正文字重"><button class="typo-seg-item active" data-bold="0" type="button" role="radio" aria-checked="true">常规</button><button class="typo-seg-item" data-bold="1" type="button" role="radio" aria-checked="false">加粗</button></div></div><p class="typo-hint">仅作用于正文排版</p></div></div><script>
+  (function () {
+    var FONT_SIZES = [13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28];
+    var DEFAULT_FONT_SIZE = 16;
+
+    var btn = document.getElementById('typoBtn');
+    var pop = document.getElementById('typoPop');
+    var dec = document.getElementById('fontDecrease');
+    var inc = document.getElementById('fontIncrease');
+    var val = document.getElementById('typoSizeVal');
+    var fontSeg = document.getElementById('fontFamilySeg');
+    var boldSeg = document.getElementById('fontBoldSeg');
+    if (!btn || !pop) return;
+
+    function getFontSize() {
+      try {
+        var stored = parseInt(localStorage.getItem('fontSize'), 10);
+        // 夹取到合法档位范围 [13,28]，与 TypoInit 的生效口径一致：
+        // 脏值（如越界/损坏）时面板显示值与实际生效值保持一致
+        if (!isNaN(stored)) return Math.min(28, Math.max(13, stored));
+        return DEFAULT_FONT_SIZE;
+      } catch (e) {
+        return DEFAULT_FONT_SIZE;
+      }
+    }
+
+    function applyFontSize(size) {
+      // 统一夹取 [13,28]：storage 多标签页同步/脏值写入也走此函数，
+      // 避免另一标签页写入越界值时本页以越界值渲染并回写。
+      // 写 --read-fs 变量而非根字号：根字号会带动全站 rem（顶栏按钮/徽章等 UI
+      // 一起膨胀变形），变量只有正文容器消费（见 global.css）
+      size = Math.min(28, Math.max(13, size));
+      document.documentElement.style.setProperty('--read-fs', size + 'px');
+      if (val) val.textContent = size;
+      try { localStorage.setItem('fontSize', size); } catch (e) {}
+    }
+
+    function getFontFamily() {
+      try {
+        var stored = localStorage.getItem('fontFamily');
+        return stored === 'serif' ? stored : 'sans';
+      } catch (e) {
+        return 'sans';
+      }
+    }
+
+    // 同步字体分段控件高亮（含 aria-checked）
+    function syncFontUI(valid) {
+      if (!fontSeg) return;
+      var items = fontSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < items.length; i++) {
+        var active = items[i].getAttribute('data-font') === valid;
+        items[i].classList.toggle('active', active);
+        items[i].setAttribute('aria-checked', active ? 'true' : 'false');
+      }
+    }
+
+    function applyFontFamily(f) {
+      var valid = f === 'serif' ? 'serif' : 'sans';
+      if (valid === 'sans') {
+        document.documentElement.removeAttribute('data-font');
+      } else {
+        document.documentElement.setAttribute('data-font', valid);
+      }
+      syncFontUI(valid);
+      try { localStorage.setItem('fontFamily', valid); } catch (e) {}
+    }
+
+    // ===== 正文字重（加粗） =====
+    function getFontBold() {
+      try {
+        return localStorage.getItem('fontBold') === '1';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function syncBoldUI(on) {
+      if (!boldSeg) return;
+      var items = boldSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < items.length; i++) {
+        var active = (items[i].getAttribute('data-bold') === '1') === on;
+        items[i].classList.toggle('active', active);
+        items[i].setAttribute('aria-checked', active ? 'true' : 'false');
+      }
+    }
+
+    function applyFontBold(on) {
+      if (on) {
+        document.documentElement.setAttribute('data-font-bold', '');
+      } else {
+        document.documentElement.removeAttribute('data-font-bold');
+      }
+      syncBoldUI(on);
+      try { localStorage.setItem('fontBold', on ? '1' : '0'); } catch (e) {}
+    }
+
+    // 面板显示值与存储同步（页面加载时执行一次）
+    if (val) val.textContent = getFontSize();
+    syncFontUI(getFontFamily());
+    syncBoldUI(getFontBold());
+
+    // ===== 面板开合 =====
+    function setOpen(open, restoreFocus) {
+      pop.classList.toggle('show', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        if (dec) dec.focus();
+        else pop.focus();
+      } else if (restoreFocus) {
+        btn.focus();
+      }
+    }
+
+    btn.addEventListener('click', function () {
+      setOpen(!pop.classList.contains('show'));
+    });
+
+    // 点击面板外部关闭（面板与按钮都在 .typo-wrap 内，无需额外排除按钮）
+    document.addEventListener('click', function (e) {
+      if (!pop.classList.contains('show')) return;
+      if (e.target.closest && e.target.closest('.typo-wrap')) return;
+      setOpen(false, false);
+    });
+
+    // 字体分段选择（面板保持打开，实时看效果；点已选段为幂等写入，无害）
+    if (fontSeg) {
+      var fontItems = fontSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < fontItems.length; i++) {
+        fontItems[i].addEventListener('click', function () {
+          applyFontFamily(this.getAttribute('data-font'));
+        });
+      }
+    }
+
+    // Esc：关面板并还原焦点
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (pop.classList.contains('show')) {
+        e.preventDefault();
+        setOpen(false, true);
+      }
+    });
+
+    // 字号步进（13-28px 12 档，--read-fs 变量缩放正文）
+    if (dec) dec.addEventListener('click', function () {
+      var cur = getFontSize();
+      var idx = FONT_SIZES.indexOf(cur);
+      if (idx > 0) applyFontSize(FONT_SIZES[idx - 1]);
+      else if (cur > FONT_SIZES[0]) applyFontSize(cur - 1);
+    });
+
+    if (inc) inc.addEventListener('click', function () {
+      var cur = getFontSize();
+      var idx = FONT_SIZES.indexOf(cur);
+      if (idx >= 0 && idx < FONT_SIZES.length - 1) applyFontSize(FONT_SIZES[idx + 1]);
+      else if (cur < FONT_SIZES[FONT_SIZES.length - 1]) applyFontSize(cur + 1);
+    });
+
+    // 加粗分段选择（面板保持打开，实时看效果；点已选段为幂等写入，无害）
+    if (boldSeg) {
+      var segItems = boldSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < segItems.length; i++) {
+        segItems[i].addEventListener('click', function () {
+          applyFontBold(this.getAttribute('data-bold') === '1');
+        });
+      }
+    }
+
+    // 多标签页同步（与 ThemeToggle 的 storage 监听一致）
+    window.addEventListener('storage', function (e) {
+      if (e.key === 'fontSize') {
+        var v = parseInt(e.newValue, 10);
+        if (!isNaN(v)) applyFontSize(v);
+      } else if (e.key === 'fontFamily') {
+        applyFontFamily(e.newValue);
+      } else if (e.key === 'fontBold') {
+        applyFontBold(e.newValue === '1');
+      }
+    });
+  })();
+</script><button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="切换暗色模式"><span class="block dark:hidden"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span><span class="hidden dark:block"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span></button><script type="module">function e(e){let t=document.documentElement;t.classList.add(`theme-anim`),t.classList.toggle(`dark`,e),window.clearTimeout(window.__themeAnimTimer),window.__themeAnimTimer=window.setTimeout(()=>{t.classList.remove(`theme-anim`)},300)}function t(){document.getElementById(`theme-toggle`)?.setAttribute(`aria-pressed`,document.documentElement.classList.contains(`dark`)?`true`:`false`)}t(),document.getElementById(`theme-toggle`)?.addEventListener(`click`,()=>{let n=!document.documentElement.classList.contains(`dark`);e(n),t();try{localStorage.setItem(`theme`,n?`dark`:`light`)}catch{}}),window.addEventListener(`storage`,n=>{n.key===`theme`&&(e(n.newValue!==`light`),t())});</script><a href="/about/" class="topbar-link" data-astro-cid-z4jru4n3>关于</a></div></div><!-- 主内容区 --><div class="main-container" data-astro-cid-z4jru4n3><!-- tabindex 让滚动容器可被键盘聚焦：桌面布局 body 不可滚，
+             若 main 无法聚焦，纯键盘用户按 PgDn/空格无法滚动正文 --><main class="main-content" tabindex="0" aria-label="正文内容" data-astro-cid-z4jru4n3><div class="max-w-3xl mx-auto px-6 py-12" data-astro-cid-ruv7hgo6><article data-astro-cid-ruv7hgo6><header class="mb-8" data-astro-cid-ruv7hgo6><h1 class="font-serif text-3xl font-semibold mb-3" data-astro-cid-ruv7hgo6>从零 Vibe Coding 出一个博客：技术复盘</h1><div class="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-500" data-astro-cid-ruv7hgo6><time datetime="2026-07-25T00:00:00.000Z" data-astro-cid-ruv7hgo6>2026年7月25日</time><span class="tag-badge" data-astro-cid-ruv7hgo6>文章</span><span class="reading-time" data-astro-cid-ruv7hgo6>约 8 分钟阅读</span></div><div class="flex flex-wrap gap-2 mt-4" data-astro-cid-ruv7hgo6><span class="tag-badge" data-astro-cid-ruv7hgo6>复盘</span><span class="tag-badge" data-astro-cid-ruv7hgo6>AI</span></div></header><div class="prose-custom" data-astro-cid-ruv7hgo6><h2 id="为什么从零开始">为什么从零开始</h2>
+<p>市面上的博客框架，Hexo、Hugo、Jekyll 这几个，用起来都差不多。选个主题，改改配置，写 Markdown，部署。可一旦你想做点超出主题预设范围的事，就会发现自己是在跟主题的模板系统较劲，真正要写的代码反而写不痛快。</p>
+<p>我想要的是一种像 flomo 那样的笔记流式博客。左边放热力图和标签筛选，右边是时间线式的卡片，内容分随想、文章、转载三种，暗色主题优先，还得有个记录统计面板，再加上好几种浏览和检索的方式。这些需求用现成主题很难凑得正好，所以我不打算套主题了，改成用 Vibe Coding 的方式从零搭。</p>
+<h2 id="技术栈">技术栈</h2>
+<p><strong>Astro 7</strong> 是核心依赖。构建时它把 Markdown 渲染成静态 HTML，首页没有任何 JavaScript 运行时开销。内容层（Content Layer）用 <code>glob</code> loader 加载文章，再用 Zod schema 校验 frontmatter。字段写错会在构建阶段就报错，不会等到上线才暴露。文章渲染统一走 <code>render()</code> API，纯静态输出。</p>
+<p><strong>Tailwind CSS 4</strong> 加 <code>@tailwindcss/typography</code> 解决样式问题。CSS-first 配置（<code>@theme</code> 定义字体、<code>@custom-variant</code> 声明暗色 class 策略）和手写的 CSS 变量主题共存，互不干扰。Typography 插件让 Markdown 渲染出来的 HTML 自动获得排版样式，不用手写每个 <code>h1</code>、<code>p</code>、<code>code</code> 的样式。</p>
+<p><strong>Shiki</strong> 处理代码高亮。配置 <code>{ dark: 'github-dark', light: 'github-light' }</code> 双主题后，构建时会同时输出两套颜色变量，前端通过 CSS 变量切换。</p>
+<p><strong>部署方案</strong>走的是双仓库架构。源码仓库 <code>rd-zzzz/Blog</code>（私有）放博客源文件，Pages 仓库 <code>rd-zzzz/rd-zzzz.github.io</code>（公开）只放构建后的静态文件。每次 push 到 main 分支，GitHub Actions 自动跑 <code>npm ci</code> → <code>astro check</code>（类型门禁）→ <code>astro build</code> → 推送静态文件到 Pages 仓库，整个流程不需要人插手。</p>
+<h2 id="架构设计">架构设计</h2>
+<pre style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto;" data-language="plaintext"><code><span><span>src/</span></span>
+<span><span>├── content.config.ts       # 内容集合定义（glob loader + Zod schema）</span></span>
+<span><span>├── content/posts/          # Markdown 文章（40 篇）</span></span>
+<span><span>├── pages/</span></span>
+<span><span>│   ├── index.astro         # 首页时间线</span></span>
+<span><span>│   ├── about.astro         # 关于页（全站访问量）</span></span>
+<span><span>│   ├── posts/[slug].astro  # 文章详情页（含旧 URL 重定向）</span></span>
+<span><span>│   └── rss.xml.ts          # RSS</span></span>
+<span><span>├── components/</span></span>
+<span><span>│   ├── Sidebar.astro       # 侧边栏主组件（数据处理 + 交互逻辑）</span></span>
+<span><span>│   ├── Heatmap.astro       # 12 周热力图</span></span>
+<span><span>│   ├── StatPanel.astro     # 统计面板（月/年/总三视图）</span></span>
+<span><span>│   ├── FilterDropdown.astro # 筛选下拉菜单</span></span>
+<span><span>│   ├── TagList.astro       # 标签列表</span></span>
+<span><span>│   ├── DateScrubber.astro  # 右侧日期导航条</span></span>
+<span><span>│   ├── SEO.astro           # OG / Twitter meta</span></span>
+<span><span>│   └── ThemeToggle.astro   # 暗色/亮色切换</span></span>
+<span><span>├── layouts/</span></span>
+<span><span>│   ├── HomeLayout.astro    # 首页布局</span></span>
+<span><span>│   └── BaseLayout.astro    # 文章详情布局</span></span>
+<span><span>└── styles/</span></span>
+<span><span>    ├── global.css          # CSS 变量主题 + Tailwind 4 配置</span></span>
+<span><span>    └── sidebar.css         # 侧边栏样式</span></span></code></pre>
+<p>侧边栏由 8 个职责单一的组件构成，每个组件通过 props 传递数据，职责清晰。</p>
+<h3 id="三种内容类型">三种内容类型</h3>
+<p>frontmatter 里的 <code>type</code> 字段区分 <code>note</code>（随想）、<code>article</code>（文章）、<code>repost</code>（转载）。这个字段直接决定了首页怎么渲染。</p>
+<p>随想在首页就直接渲染全文，因为它们通常很短，没必要按需加载。文章和转载只摆标题和摘要，点”展开全文”之后，脚本通过 AJAX 去详情页把内容抓回来注入。这套做法让首页 HTML 稳定在 200 KB 上下。</p>
+<h3 id="css-变量驱动主题">CSS 变量驱动主题</h3>
+<p>所有颜色定义为 CSS 变量（<code>--bg</code>、<code>--card-bg</code>、<code>--text-emphasize</code> 等），暗色为默认值，亮色通过 <code>html:not(.dark)</code> 覆盖。主题切换只需在 <code>&#x3C;html></code> 上 toggle <code>dark</code> class，偏好存储在 <code>localStorage</code>，多标签页通过 <code>storage</code> 事件同步。Tailwind 的 <code>dark:</code> 变体用 <code>@custom-variant</code> 声明为同一 class 策略，两套系统指向同一个开关。</p>
+<p>字号系统用了差不多的思路。正文相关的元素用 <code>rem</code> 单位，跟着根字号等比缩放。UI 元素（按钮、标签、导航条）保持 <code>px</code> 不变。这样用户调大字号时，正文会变大，界面却不会跟着发肿。</p>
+<h2 id="核心实现">核心实现</h2>
+<h3 id="首页数据流">首页数据流</h3>
+<p>构建时，<code>getCollection('posts')</code> 获取所有文章，过滤 <code>draft: true</code>，按 <code>pinned</code> 优先加 <code>date</code> 降序排序。随想类型调用 <code>render()</code> 预渲染为 HTML 直接嵌入。文章和转载的正文容器留空，等待客户端 AJAX 填充。</p>
+<p>运行时，页面加载完会做两件初始化工作。一是检测随想卡片的 <code>scrollHeight</code>，超过阈值（大约 9 行高度）的就自动折叠，加上渐变遮罩，字体加载完或者滚动时都会重新测量。二是初始化分页，每页 10 条，超出的部分先藏起来。</p>
+<p>筛选逻辑用了一套统一状态模型。搜索、标签、类型、日期这四类条件共享同一个状态源，任何条件一变，就对全部条件求交集再重算显示。这样能避开一个老毛病。多套筛选逻辑各自覆盖 <code>display</code>，选了标签再搜索，状态就丢了，这类问题不会再出现。</p>
+<h3 id="ajax-按需加载">AJAX 按需加载</h3>
+<p>用户点”展开全文”的时候，脚本先去 <code>contentCache</code>（一个 <code>Map&#x3C;string, string></code>）里查。有缓存就直接用，没有就 <code>fetch('/posts/{slug}/')</code>，交给 <code>DOMParser</code> 解析，提取正文容器，再过 <code>DOMPurify</code> 净化，最后存进缓存。DOMPurify 用动态 <code>import()</code> 按需加载，首页一开始不下载它。内容按 1500 字符切段，先注入第一段，剩下靠”加载更多”按钮一段段追加。加载失败会留一个重试入口，再点一次就能重新拉。</p>
+<p>详情页正文在构建时还经过 <code>rehype-sanitize</code> 净化，首页抓取后再过一遍 DOMPurify，两端各有一层防护。</p>
+<h3 id="日期导航条datescrubber">日期导航条（DateScrubber）</h3>
+<p>这是整个项目里最核心的浏览功能。文章一多，想找某天的笔记就只能不停往下滚，这条导航条就是来解决这个问题的。</p>
+<p>导航条在构建时由首页根据所有文章的 <code>date</code> 字段统计生成。前端用 <code>rebuild()</code> 在页面加载和每次筛选时动态创建刻度标记，按固定间距用 <code>position: absolute</code> 排在 track 内部。所以不管文章有多少，标记都等距排开，不会互相叠住。</p>
+<p>涟漪效果是这样做的。光标停在导航条区域里，脚本找到最近的刻度，以它为中心，左右各 3 个刻度按距离衰减设置 <code>data-factor</code> 属性（0 到 100）。CSS 用 <code>data-factor</code> 属性选择器控制宽度和颜色。最近的刻度宽度翻倍，从 8px 变成 16px，最远的衰减到 1.2 倍。颜色从灰色插值到品牌绿，插值色取自 CSS 变量，亮色和暗色主题各一套。tooltip 用单个 <code>position: fixed</code> 元素，悬浮时定在光标左侧，通过 <code>findNearest</code> 函数匹配最近的刻度。这样光标滑在两个刻度之间时，tooltip 也不会断。</p>
+<p>点击刻度后，脚本计算目标文章的精确位置（加上顶栏高度偏移），再检查文章是不是还卡在分页折叠状态。如果是，先展开足够的分页让目标文章露出来，再平滑滚过去。导航条还会跟着主页滚动同步高亮当前位置（rAF 节流，避免滚动时全量重排），滚动高亮和分页展开状态始终对得上。</p>
+<h3 id="统计面板与年视图动效statpanel">统计面板与年视图动效（StatPanel）</h3>
+<p>记录统计是一个全屏遮罩模态面板，里面可以切三个视图。</p>
+<ul>
+<li><strong>月视图</strong>，12 个月份卡片加一张日历热力图，展示每月的笔记密度。</li>
+<li><strong>年视图</strong>，三张独立的柱状图（笔记数 blue / 字数 green / 活跃天数 red），各 12 列按月份对齐，下方附带月度热力图网格。</li>
+<li><strong>总视图</strong>，若干关键指标卡片，比如总笔记数、总标签数、记录跨度天数。</li>
+</ul>
+<p>年视图有两处动效设计。</p>
+<p><strong>入场动效</strong>。切到「年」视图时，三个柱状图的数据从 0 平滑涨到各自的当前值。柱高由 CSS 变量 <code>--pct</code> 驱动，即使没有 JS 也能显示正确高度。切换时先瞬时归零并强制回流，再用 <code>requestAnimationFrame</code> 统一从 0 涨到目标高度，并按列错峰（<code>transitionDelay</code>），让三张图同步呈”列状”上扬。</p>
+<p><strong>悬浮高亮加 tooltip</strong>。光标停在某个月份的柱子上，白色半透明高亮块会包住那张图里对应的整月列。同时弹出 tooltip 显示那个月的数据，只显示被悬浮图表自己的指标，零值也会高亮并标出 0。高亮按光标的 x 坐标去命中月份列，所以鼠标沿月份横向滑过去时，高亮和数据会持续刷新。</p>
+<h3 id="随机漫步">随机漫步</h3>
+<p>侧边栏底部有个「随机漫步」按钮，是逛长博客时的轻松入口。点一下，脚本先把所有筛选重置（类型、标签、搜索回到全部，分页复位），再从全站笔记里随机抽一篇，复用 DateScrubber 的滚动逻辑平滑滚过去，并且只展开目标所在的分页，不会一次性把隐藏的文章全摊开。</p>
+<p>为了让它在任何环境下都能用，滚动逻辑会自动判断真正的滚动容器。桌面端由 <code>.main-content</code> 自己滚，移动端整页交给 <code>window</code> 滚，两边行为一致。点击的那一瞬，按钮文字变成”漫步中…”作为反馈。</p>
+<h3 id="shiki-双主题">Shiki 双主题</h3>
+<p>Shiki 配置成 <code>{ dark: 'github-dark', light: 'github-light' }</code> 之后，构建时会在每个 <code>&#x3C;pre class="astro-code"></code> 上同时输出两套颜色。亮色主题的 <code>color</code> 和 <code>background-color</code> 作为内联样式，暗色主题的 <code>--shiki-dark</code> 和 <code>--shiki-dark-bg</code> 作为 CSS 变量。</p>
+<p>再用一组带 <code>!important</code> 的 CSS 覆盖规则，在 <code>html.dark</code> 下用 CSS 变量压住内联样式的颜色，完成暗亮主题的切换。</p>
+<pre style="background-color:#fff;--shiki-dark-bg:#24292e;color:#24292e;--shiki-dark:#e1e4e8; overflow-x: auto;" data-language="css"><code><span><span style="color:#22863A;--shiki-dark:#85E89D">html</span><span style="color:#6F42C1;--shiki-dark:#B392F0">.dark</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> .astro-code</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> {</span></span>
+<span><span style="color:#005CC5;--shiki-dark:#79B8FF">  background-color</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">var</span><span style="color:#24292E;--shiki-dark:#E1E4E8">(</span><span style="color:#E36209;--shiki-dark:#FFAB70">--shiki-dark-bg</span><span style="color:#24292E;--shiki-dark:#E1E4E8">) </span><span style="color:#D73A49;--shiki-dark:#F97583">!important</span><span style="color:#24292E;--shiki-dark:#E1E4E8">;</span></span>
+<span><span style="color:#24292E;--shiki-dark:#E1E4E8">}</span></span>
+<span><span style="color:#22863A;--shiki-dark:#85E89D">html</span><span style="color:#6F42C1;--shiki-dark:#B392F0">.dark</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> .astro-code</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> .line</span><span style="color:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span><span style="color:#22863A;--shiki-dark:#85E89D">html</span><span style="color:#6F42C1;--shiki-dark:#B392F0">.dark</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> .astro-code</span><span style="color:#6F42C1;--shiki-dark:#B392F0"> .line</span><span style="color:#22863A;--shiki-dark:#85E89D"> span</span><span style="color:#24292E;--shiki-dark:#E1E4E8"> {</span></span>
+<span><span style="color:#005CC5;--shiki-dark:#79B8FF">  color</span><span style="color:#24292E;--shiki-dark:#E1E4E8">: </span><span style="color:#005CC5;--shiki-dark:#79B8FF">var</span><span style="color:#24292E;--shiki-dark:#E1E4E8">(</span><span style="color:#E36209;--shiki-dark:#FFAB70">--shiki-dark</span><span style="color:#24292E;--shiki-dark:#E1E4E8">) </span><span style="color:#D73A49;--shiki-dark:#F97583">!important</span><span style="color:#24292E;--shiki-dark:#E1E4E8">;</span></span>
+<span><span style="color:#24292E;--shiki-dark:#E1E4E8">}</span></span></code></pre>
+<h3 id="管理后台">管理后台</h3>
+<p><code>admin/</code> 目录下有一个纯前端的管理后台，基于 File System Access API 操作本地 <code>src/content/posts/</code> 目录下的 Markdown 文件。支持创建、编辑、删除文章，上传图片，编辑器为本地化的 Vditor（离线可用）。编辑保存会保留 frontmatter 中未知的自定义字段与原始顺序，含引号或换行的标题和描述会被正确转义，不会产出破坏构建的无效 YAML。</p>
+<p>后台配套一个本地 Python API 服务器（静态文件服务加 git 推送）。推送前会校验请求来源（防止任意网页跨站触发提交），还会检测本地是否落后远程，避免产生推不上去的提交。这个后台只在本地用，不部署到线上，所以放在 <code>.gitignore</code> 里排除掉。</p>
+<h3 id="工程细节">工程细节</h3>
+<p>有几处决策容易被忽略，却很影响长期维护。文章 URL 用不带 <code>.md</code> 后缀的规范路径，旧链接自动生成重定向页，外链和 RSS 订阅都不会失效。访问量统计由 Cloudflare Workers 加 KV 提供，按 IP 加日期去重，管理端点用 Bearer token 鉴权，token 走 <code>wrangler secret</code> 注入，不进代码库。CI 在部署前跑 <code>astro check</code> 类型门禁，客户端脚本的类型错误没法悄悄上线。字体做了自托管（Inter + Noto Sans SC + Noto Serif SC），离线和隐私都有保障。</p>
+<h2 id="vibe-coding-工作流">Vibe Coding 工作流</h2>
+<p><img src="/images/%E7%94%A8%E9%87%8F-1.png" alt="用量 1" loading="lazy" decoding="async"></p>
+<p>整个项目是全程 AI 辅助完成的。工作流大致是这样。</p>
+<p>需求描述，AI 生成初始代码，本地预览，发现问题，把截图或描述丢给 AI，AI 修复，再预览，再反馈。这是一个很快的循环。人负责在每一步判断”对不对”，AI 负责把判断落成代码。</p>
+<p>这个过程里，人的角色从”写代码”变成了”审代码”和”定方向”。AI 管实现细节，人管产品判断。比如这个折叠阈值合不合适，这个动画时长自不自然，这个颜色该亮到什么程度。</p>
+<p>写代码本身不怎么耗时间，真正耗时间的是那些”判断什么是对的”的取舍。这个动画该持续多久，这个交互该在哪里停，这个导航条该撑满整屏还是紧凑居中。这些判断始终是人来做。</p>
+<p>写代码的方式在变，但知道自己要什么，这件事始终没变。</p></div></article><nav class="post-nav mt-12 pt-8 border-t border-gray-100 dark:border-gray-800" data-astro-cid-ruv7hgo6><a href="/posts/20260724-梁文锋投资者交流会录音转录全文/" class="post-nav-item post-nav-prev" data-astro-cid-ruv7hgo6><span class="post-nav-label" data-astro-cid-ruv7hgo6>← 上一篇</span><span class="post-nav-title" data-astro-cid-ruv7hgo6>梁文锋投资者交流会（录音转录全文）</span></a><a href="/posts/20260801-把斯坦福最火的一门课做成了prompt来帮我设计人生/" class="post-nav-item post-nav-next" data-astro-cid-ruv7hgo6><span class="post-nav-label" data-astro-cid-ruv7hgo6>下一篇 →</span><span class="post-nav-title" data-astro-cid-ruv7hgo6>把斯坦福最火的一门课，做成了Prompt来帮我设计人生</span></a></nav></div></main></div></div><!-- 阅读进度条（顶部） + 回到顶部按钮 --><div id="readingProgress" class="reading-progress" aria-hidden="true" data-astro-cid-z4jru4n3></div><button id="backToTop" class="back-to-top" aria-label="回到顶部" title="回到顶部" data-astro-cid-z4jru4n3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-z4jru4n3><polyline points="18 15 12 9 6 15" data-astro-cid-z4jru4n3></polyline></svg></button><script>
+      (function () {
+        // 阅读进度条 + 回到顶部（兼容桌面 .main-content 滚动与移动端 window 滚动）
+        var progress = document.getElementById('readingProgress');
+        var backTop = document.getElementById('backToTop');
+        if (!progress || !backTop) return;
+        var main = document.querySelector('.main-content');
+        var raf = 0;
+
+        function getScroller() {
+          if (main) {
+            var ov = getComputedStyle(main).overflowY;
+            if (ov === 'auto' || ov === 'scroll') return main;
+          }
+          return window;
+        }
+
+        function update() {
+          raf = 0;
+          var scroller = getScroller();
+          var el = scroller === window ? document.documentElement : scroller;
+          // is:inline 纯 JS：用 'in' 运行时收窄，规避 Window/Element 联合类型上 scrollTop 的 TS 报错
+          var scrollTop = scroller === window
+            ? (window.scrollY || document.documentElement.scrollTop || 0)
+            : ('scrollTop' in el ? el.scrollTop : 0);
+          var max = 'scrollHeight' in el ? el.scrollHeight - el.clientHeight : 0;
+          var pct = max > 0 ? Math.min(1, Math.max(0, scrollTop / max)) : 0;
+          // clip-path 裁剪：元素全宽渲染，只显示已读部分，避免缩放模糊
+          progress.style.clipPath = 'inset(0 ' + ((1 - pct) * 100).toFixed(2) + '% 0 0)';
+          var show = scrollTop > 600;
+          backTop.style.opacity = show ? '1' : '0';
+          backTop.style.pointerEvents = show ? 'auto' : 'none';
+        }
+
+        function onScroll() {
+          if (raf) return;
+          raf = requestAnimationFrame(update);
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        if (main) main.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll, { passive: true });
+        update();
+
+        backTop.addEventListener('click', function () {
+          var scroller = getScroller();
+          if (scroller === window) window.scrollTo({ top: 0, behavior: 'smooth' });
+          else scroller.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      })();
+    </script><script type="module" src="/_astro/BaseLayout.astro_astro_type_script_index_0_lang.CLNLtrM5.js"></script></body></html>

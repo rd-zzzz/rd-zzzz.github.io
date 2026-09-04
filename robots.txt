@@ -1,0 +1,12 @@
+# 张偌迪的博客 robots.txt
+# 策略：全部内容开放抓取——个人博客，欢迎搜索引擎收录与引用，不设任何抓取限制
+
+User-agent: *
+Allow: /
+
+# 管理后台的回收站目录：被删除的文章不应再被收录（防御性配置，避免删除后仍残留索引）
+Disallow: /trash/
+
+# 站点地图：XML 供 Google/必应等主流引擎；TXT（每行一个 URL）供百度站长平台直接提交
+Sitemap: https://rodneyzhang.com/sitemap.xml
+Sitemap: https://rodneyzhang.com/sitemap.txt

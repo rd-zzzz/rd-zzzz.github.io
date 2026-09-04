@@ -1,0 +1,280 @@
+<!DOCTYPE html><html lang="zh-CN" data-astro-cid-z4jru4n3><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- 主题初始化：必须放在任何样式表之前同步执行，避免深色模式导航新页面时白闪（FOUC） --><script>
+      (function() {
+        var stored = null;
+        try { stored = localStorage.getItem('theme'); } catch (e) {}
+        // 默认深夜模式：仅当用户手动选择过浅色（localStorage.theme === 'light'）时才浅色，
+        // 未设置过的一律深色（不再跟随系统 prefers-color-scheme）
+        if (stored !== 'light') {
+          document.documentElement.classList.add('dark');
+        }
+        // 原生跨文档 View Transitions 过渡期间，首帧按主题设置根元素颜色方案，
+        // 避免新页面以浅色背景渲染一瞬（旧页淡出/新页淡入交叠时的背景色闪变）
+        document.documentElement.style.colorScheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      })();
+    </script><!-- 阅读偏好初始化（字号 + 字体族）：紧随主题脚本，样式渲染前落位，防字体族切换闪变 --><script>
+  (function () {
+    // 字号：与 TypoControls 同口径夹取到 [13,28]（越界脏值也夹取而非忽略），
+    // 保证首帧生效字号与面板显示值一致；非法/缺失时保持浏览器默认 16px。
+    // 写入 --read-fs 变量而非根字号：根字号会带动全站 rem（顶栏按钮/徽章等 UI
+    // 一起膨胀变形），变量只有正文容器消费（见 global.css），兑现"仅作用于正文排版"
+    try {
+      var fs = parseInt(localStorage.getItem('fontSize'), 10);
+      if (!isNaN(fs)) {
+        fs = Math.min(28, Math.max(13, fs));
+        document.documentElement.style.setProperty('--read-fs', fs + 'px');
+      }
+    } catch (e) {}
+    // 字体族：仅 serif 需要显式标记，sans 为默认（不设属性）
+    try {
+      var ff = localStorage.getItem('fontFamily');
+      if (ff === 'serif') {
+        document.documentElement.setAttribute('data-font', ff);
+      }
+    } catch (e) {}
+    // 正文字重：仅加粗需显式标记，常规为默认（不设属性）
+    try {
+      if (localStorage.getItem('fontBold') === '1') {
+        document.documentElement.setAttribute('data-font-bold', '');
+      }
+    } catch (e) {}
+  })();
+</script><!-- 兜底：样式表尚未加载时，根元素背景与主题一致，防止白闪 --><style>
+      html { background-color: #f8f7f5; }
+      html.dark { background-color: #121212; }
+    </style><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="preload" href="/fonts/fonts.css" as="style"><link rel="stylesheet" href="/fonts/fonts.css"><title>一个区分i人和e人的观点 — Rodney Zhang&#39;s Blog</title><meta name="description" content><link rel="canonical" href="https://rodneyzhang.com/posts/20260315-%E4%B8%80%E4%B8%AA%E5%8C%BA%E5%88%86i%E4%BA%BA%E5%92%8Ce%E4%BA%BA%E7%9A%84%E8%A7%82%E7%82%B9/"><!-- 站点验证：百度 + Google（meta 标签方式，避免 Cloudflare Pages 对 .html 的 308 跳转导致文件验证失败） --><meta name="baidu-site-verification" content="codeva-LFlrP7rYFV"><meta name="google-site-verification" content="google8a09aa7dbeeba943"><meta property="og:title" content="一个区分i人和e人的观点 — Rodney Zhang's Blog"><meta property="og:description" content><meta property="og:image" content="https://rodneyzhang.com/images/og-default.png"><meta property="og:url" content="https://rodneyzhang.com/posts/20260315-%E4%B8%80%E4%B8%AA%E5%8C%BA%E5%88%86i%E4%BA%BA%E5%92%8Ce%E4%BA%BA%E7%9A%84%E8%A7%82%E7%82%B9/"><meta property="og:type" content="article"><meta property="og:site_name" content="Rodney Zhang's Blog"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="一个区分i人和e人的观点 — Rodney Zhang's Blog"><meta name="twitter:description" content><meta name="twitter:image" content="https://rodneyzhang.com/images/og-default.png"><link rel="alternate" type="application/rss+xml" title="Rodney Zhang's Blog" href="https://rodneyzhang.com/rss.xml"><!-- 隐藏的作者信息：不参与页面可见渲染，仅供搜索引擎抓取建立人名↔站点关联 --><meta name="author" content="张偌迪"><!-- 隐藏关键词：完全不渲染给访客，Google 已不采用，但百度仍给轻微权重，覆盖人名/博客写法与主题 --><meta name="keywords" content="张偌迪,张偌迪的博客,Rodney Zhang,Zhang Ruodi,Rodney Zhang's Blog,个人博客,独立博客,随笔,随想,思考,AI,笔记"><script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"张偌迪","alternateName":["Rodney Zhang","Zhang Ruodi","张偌迪的博客","Rodney Zhang's Blog"],"url":"https://rodneyzhang.com/","description":"张偌迪（Rodney Zhang）的个人独立博客，记录随笔、随想、思考、AI 与笔记等内容。","sameAs":["https://github.com/rd-zzzz"]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"张偌迪的博客","alternateName":["Rodney Zhang Blog","Rodney Zhang's Blog"],"url":"https://rodneyzhang.com/","inLanguage":"zh-CN","author":{"@type":"Person","name":"张偌迪","url":"https://rodneyzhang.com/"}}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"一个区分i人和e人的观点","description":"","datePublished":"2026-03-15T00:00:00.000Z","dateModified":"2026-03-15T00:00:00.000Z","author":{"@type":"Person","name":"张偌迪","url":"https://rodneyzhang.com/"},"publisher":{"@type":"Person","name":"张偌迪"},"image":"https://rodneyzhang.com/images/og-default.png","wordCount":164,"mainEntityOfPage":"https://rodneyzhang.com/posts/20260315-%E4%B8%80%E4%B8%AA%E5%8C%BA%E5%88%86i%E4%BA%BA%E5%92%8Ce%E4%BA%BA%E7%9A%84%E8%A7%82%E7%82%B9/","inLanguage":"zh-CN"}</script><style>.reading-time[data-astro-cid-ruv7hgo6]{color:var(--text-disable)}.prose-custom[data-astro-cid-ruv7hgo6]{font-size:calc(var(--read-fs,1rem) * 1.0625);max-width:70ch;margin-inline:auto;line-height:1.85}.prose-custom[data-astro-cid-ruv7hgo6] p[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] li[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] blockquote[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h1[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h2[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h3[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h4[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h5[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] h6[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] figcaption[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] th[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] td[data-astro-cid-ruv7hgo6]{letter-spacing:.05em}.prose-custom[data-astro-cid-ruv7hgo6] pre[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] code[data-astro-cid-ruv7hgo6],.prose-custom[data-astro-cid-ruv7hgo6] img[data-astro-cid-ruv7hgo6]{letter-spacing:0}.post-nav[data-astro-cid-ruv7hgo6]{gap:16px;display:flex}.post-nav-item[data-astro-cid-ruv7hgo6]{border:1px solid var(--line-light);border-radius:8px;flex-direction:column;flex:1;gap:4px;padding:12px 16px;text-decoration:none;transition:background .2s,border-color .2s;display:flex}.post-nav-item[data-astro-cid-ruv7hgo6]:hover{background:var(--hover-bg);border-color:var(--text-subtle)}.post-nav-next[data-astro-cid-ruv7hgo6]{text-align:right}.post-nav-label[data-astro-cid-ruv7hgo6]{color:var(--text-subtle);font-size:12px}.post-nav-title[data-astro-cid-ruv7hgo6]{color:var(--text-emphasize);text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:500;overflow:hidden}@media (width<=640px){.post-nav[data-astro-cid-ruv7hgo6]{flex-direction:column}.post-nav-next[data-astro-cid-ruv7hgo6]{text-align:left}}
+</style><link rel="stylesheet" href="/_astro/global.DJwx9az_.css"><style>.article-body[data-astro-cid-z4jru4n3]{-webkit-font-smoothing:antialiased;background:var(--bg);height:100vh;color:var(--text-emphasize);font-family:Inter,Noto Sans SC,system-ui,sans-serif;overflow:hidden}.article-container[data-astro-cid-z4jru4n3]{flex-direction:column;height:100%;display:flex}.topbar[data-astro-cid-z4jru4n3]{border-bottom:1px solid var(--line-light);background:var(--bg);flex-shrink:0;justify-content:space-between;align-items:center;padding:14px 24px;display:flex}.topbar-left[data-astro-cid-z4jru4n3]{align-items:center;gap:12px;display:flex}.breadcrumb[data-astro-cid-z4jru4n3]{color:var(--text-subtle);border-radius:6px;padding:4px 6px;font-size:14px;font-weight:500;text-decoration:none;transition:color .2s,background-color .2s}.breadcrumb[data-astro-cid-z4jru4n3]:hover{color:var(--text-emphasize);background:var(--hover-bg)}.topbar-right[data-astro-cid-z4jru4n3]{align-items:center;gap:8px;display:flex}.back-link[data-astro-cid-z4jru4n3]{color:var(--text-subtle);border-radius:6px;padding:4px 8px;font-size:13px;text-decoration:none;transition:color .2s,background-color .2s}.back-link[data-astro-cid-z4jru4n3]:hover{color:var(--text-emphasize);background:var(--hover-bg)}.topbar-link[data-astro-cid-z4jru4n3]{color:var(--text-subtle);border-radius:6px;padding:6px 12px;font-size:14px;text-decoration:none;transition:color .2s,background-color .2s}.topbar-link[data-astro-cid-z4jru4n3]:hover{color:var(--text-emphasize);background:var(--hover-bg)}.topbar-icon-btn[data-astro-cid-z4jru4n3]{width:32px;height:32px;color:var(--text-subtle);cursor:pointer;background:0 0;border:none;border-radius:6px;flex-shrink:0;justify-content:center;align-items:center;transition:color .2s,background-color .2s;display:flex}.topbar-icon-btn[data-astro-cid-z4jru4n3]:hover{color:var(--text-emphasize);background:var(--hover-bg)}.main-container[data-astro-cid-z4jru4n3]{flex:1;overflow:hidden}.main-content[data-astro-cid-z4jru4n3]{height:100%;padding:24px;overflow:hidden auto}.main-content[data-astro-cid-z4jru4n3]:focus{outline:none}@media (width<=768px){.article-body[data-astro-cid-z4jru4n3]{height:auto;overflow:auto}.topbar[data-astro-cid-z4jru4n3]{z-index:100;position:sticky;top:0}.article-container[data-astro-cid-z4jru4n3]{height:auto}.main-container[data-astro-cid-z4jru4n3]{overflow:visible}.main-content[data-astro-cid-z4jru4n3]{padding:16px;overflow:visible}}.reading-progress[data-astro-cid-z4jru4n3]{background:linear-gradient(90deg, var(--green), var(--contribution-level4));clip-path:inset(0 100% 0 0);z-index:1001;pointer-events:none;width:100%;height:4px;position:fixed;top:0;left:0}.back-to-top[data-astro-cid-z4jru4n3]{border:1px solid var(--line-light);background:var(--card-bg);width:40px;height:40px;color:var(--text-emphasize);cursor:pointer;opacity:0;pointer-events:none;z-index:1000;border-radius:50%;justify-content:center;align-items:center;transition:opacity .25s,background-color .2s;display:flex;position:fixed;bottom:24px;right:24px;box-shadow:0 2px 10px #00000040}.back-to-top[data-astro-cid-z4jru4n3]:hover{background:var(--hover-bg)}
+</style></head><body class="article-body" data-astro-cid-z4jru4n3><div class="article-container" data-astro-cid-z4jru4n3><!-- 顶栏 --><div class="topbar" data-astro-cid-z4jru4n3><div class="topbar-left" data-astro-cid-z4jru4n3><a href="/" class="breadcrumb" data-astro-cid-z4jru4n3>Rodney Zhang's Blog</a><a href="/" class="back-link" data-astro-cid-z4jru4n3>← 返回</a></div><div class="topbar-right" data-astro-cid-z4jru4n3><div class="typo-wrap"><button class="topbar-icon-btn typo-btn" id="typoBtn" type="button" aria-label="排版设置" aria-haspopup="true" aria-expanded="false" aria-controls="typoPop" title="排版设置"><!-- Aa 用字体渲染文本（与原 A−/A+ 按钮同机制，hinting 锐利不糊）；
+         font-size 22px → cap 高 ≈15.8px，与太阳图标整体（16.5px）像素对齐 --><span class="typo-btn-glyph" aria-hidden="true">Aa</span></button><div class="typo-pop" id="typoPop" role="group" aria-label="阅读偏好" tabindex="-1"><div class="typo-row"><span class="typo-label">字号</span><button class="typo-step" id="fontDecrease" type="button" aria-label="减小字号">−</button><span class="typo-size" id="typoSizeVal">16</span><button class="typo-step" id="fontIncrease" type="button" aria-label="增大字号">+</button></div><div class="typo-row"><span class="typo-label">字体</span><div class="typo-seg" id="fontFamilySeg" role="radiogroup" aria-label="正文字体"><button class="typo-seg-item active" data-font="sans" type="button" role="radio" aria-checked="true">无衬线</button><button class="typo-seg-item" data-font="serif" type="button" role="radio" aria-checked="false">衬线</button></div></div><div class="typo-row"><span class="typo-label">加粗</span><div class="typo-seg" id="fontBoldSeg" role="radiogroup" aria-label="正文字重"><button class="typo-seg-item active" data-bold="0" type="button" role="radio" aria-checked="true">常规</button><button class="typo-seg-item" data-bold="1" type="button" role="radio" aria-checked="false">加粗</button></div></div><p class="typo-hint">仅作用于正文排版</p></div></div><script>
+  (function () {
+    var FONT_SIZES = [13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28];
+    var DEFAULT_FONT_SIZE = 16;
+
+    var btn = document.getElementById('typoBtn');
+    var pop = document.getElementById('typoPop');
+    var dec = document.getElementById('fontDecrease');
+    var inc = document.getElementById('fontIncrease');
+    var val = document.getElementById('typoSizeVal');
+    var fontSeg = document.getElementById('fontFamilySeg');
+    var boldSeg = document.getElementById('fontBoldSeg');
+    if (!btn || !pop) return;
+
+    function getFontSize() {
+      try {
+        var stored = parseInt(localStorage.getItem('fontSize'), 10);
+        // 夹取到合法档位范围 [13,28]，与 TypoInit 的生效口径一致：
+        // 脏值（如越界/损坏）时面板显示值与实际生效值保持一致
+        if (!isNaN(stored)) return Math.min(28, Math.max(13, stored));
+        return DEFAULT_FONT_SIZE;
+      } catch (e) {
+        return DEFAULT_FONT_SIZE;
+      }
+    }
+
+    function applyFontSize(size) {
+      // 统一夹取 [13,28]：storage 多标签页同步/脏值写入也走此函数，
+      // 避免另一标签页写入越界值时本页以越界值渲染并回写。
+      // 写 --read-fs 变量而非根字号：根字号会带动全站 rem（顶栏按钮/徽章等 UI
+      // 一起膨胀变形），变量只有正文容器消费（见 global.css）
+      size = Math.min(28, Math.max(13, size));
+      document.documentElement.style.setProperty('--read-fs', size + 'px');
+      if (val) val.textContent = size;
+      try { localStorage.setItem('fontSize', size); } catch (e) {}
+    }
+
+    function getFontFamily() {
+      try {
+        var stored = localStorage.getItem('fontFamily');
+        return stored === 'serif' ? stored : 'sans';
+      } catch (e) {
+        return 'sans';
+      }
+    }
+
+    // 同步字体分段控件高亮（含 aria-checked）
+    function syncFontUI(valid) {
+      if (!fontSeg) return;
+      var items = fontSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < items.length; i++) {
+        var active = items[i].getAttribute('data-font') === valid;
+        items[i].classList.toggle('active', active);
+        items[i].setAttribute('aria-checked', active ? 'true' : 'false');
+      }
+    }
+
+    function applyFontFamily(f) {
+      var valid = f === 'serif' ? 'serif' : 'sans';
+      if (valid === 'sans') {
+        document.documentElement.removeAttribute('data-font');
+      } else {
+        document.documentElement.setAttribute('data-font', valid);
+      }
+      syncFontUI(valid);
+      try { localStorage.setItem('fontFamily', valid); } catch (e) {}
+    }
+
+    // ===== 正文字重（加粗） =====
+    function getFontBold() {
+      try {
+        return localStorage.getItem('fontBold') === '1';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function syncBoldUI(on) {
+      if (!boldSeg) return;
+      var items = boldSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < items.length; i++) {
+        var active = (items[i].getAttribute('data-bold') === '1') === on;
+        items[i].classList.toggle('active', active);
+        items[i].setAttribute('aria-checked', active ? 'true' : 'false');
+      }
+    }
+
+    function applyFontBold(on) {
+      if (on) {
+        document.documentElement.setAttribute('data-font-bold', '');
+      } else {
+        document.documentElement.removeAttribute('data-font-bold');
+      }
+      syncBoldUI(on);
+      try { localStorage.setItem('fontBold', on ? '1' : '0'); } catch (e) {}
+    }
+
+    // 面板显示值与存储同步（页面加载时执行一次）
+    if (val) val.textContent = getFontSize();
+    syncFontUI(getFontFamily());
+    syncBoldUI(getFontBold());
+
+    // ===== 面板开合 =====
+    function setOpen(open, restoreFocus) {
+      pop.classList.toggle('show', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        if (dec) dec.focus();
+        else pop.focus();
+      } else if (restoreFocus) {
+        btn.focus();
+      }
+    }
+
+    btn.addEventListener('click', function () {
+      setOpen(!pop.classList.contains('show'));
+    });
+
+    // 点击面板外部关闭（面板与按钮都在 .typo-wrap 内，无需额外排除按钮）
+    document.addEventListener('click', function (e) {
+      if (!pop.classList.contains('show')) return;
+      if (e.target.closest && e.target.closest('.typo-wrap')) return;
+      setOpen(false, false);
+    });
+
+    // 字体分段选择（面板保持打开，实时看效果；点已选段为幂等写入，无害）
+    if (fontSeg) {
+      var fontItems = fontSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < fontItems.length; i++) {
+        fontItems[i].addEventListener('click', function () {
+          applyFontFamily(this.getAttribute('data-font'));
+        });
+      }
+    }
+
+    // Esc：关面板并还原焦点
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (pop.classList.contains('show')) {
+        e.preventDefault();
+        setOpen(false, true);
+      }
+    });
+
+    // 字号步进（13-28px 12 档，--read-fs 变量缩放正文）
+    if (dec) dec.addEventListener('click', function () {
+      var cur = getFontSize();
+      var idx = FONT_SIZES.indexOf(cur);
+      if (idx > 0) applyFontSize(FONT_SIZES[idx - 1]);
+      else if (cur > FONT_SIZES[0]) applyFontSize(cur - 1);
+    });
+
+    if (inc) inc.addEventListener('click', function () {
+      var cur = getFontSize();
+      var idx = FONT_SIZES.indexOf(cur);
+      if (idx >= 0 && idx < FONT_SIZES.length - 1) applyFontSize(FONT_SIZES[idx + 1]);
+      else if (cur < FONT_SIZES[FONT_SIZES.length - 1]) applyFontSize(cur + 1);
+    });
+
+    // 加粗分段选择（面板保持打开，实时看效果；点已选段为幂等写入，无害）
+    if (boldSeg) {
+      var segItems = boldSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < segItems.length; i++) {
+        segItems[i].addEventListener('click', function () {
+          applyFontBold(this.getAttribute('data-bold') === '1');
+        });
+      }
+    }
+
+    // 多标签页同步（与 ThemeToggle 的 storage 监听一致）
+    window.addEventListener('storage', function (e) {
+      if (e.key === 'fontSize') {
+        var v = parseInt(e.newValue, 10);
+        if (!isNaN(v)) applyFontSize(v);
+      } else if (e.key === 'fontFamily') {
+        applyFontFamily(e.newValue);
+      } else if (e.key === 'fontBold') {
+        applyFontBold(e.newValue === '1');
+      }
+    });
+  })();
+</script><button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="切换暗色模式"><span class="block dark:hidden"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span><span class="hidden dark:block"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span></button><script type="module">function e(e){let t=document.documentElement;t.classList.add(`theme-anim`),t.classList.toggle(`dark`,e),window.clearTimeout(window.__themeAnimTimer),window.__themeAnimTimer=window.setTimeout(()=>{t.classList.remove(`theme-anim`)},300)}function t(){document.getElementById(`theme-toggle`)?.setAttribute(`aria-pressed`,document.documentElement.classList.contains(`dark`)?`true`:`false`)}t(),document.getElementById(`theme-toggle`)?.addEventListener(`click`,()=>{let n=!document.documentElement.classList.contains(`dark`);e(n),t();try{localStorage.setItem(`theme`,n?`dark`:`light`)}catch{}}),window.addEventListener(`storage`,n=>{n.key===`theme`&&(e(n.newValue!==`light`),t())});</script><a href="/about/" class="topbar-link" data-astro-cid-z4jru4n3>关于</a></div></div><!-- 主内容区 --><div class="main-container" data-astro-cid-z4jru4n3><!-- tabindex 让滚动容器可被键盘聚焦：桌面布局 body 不可滚，
+             若 main 无法聚焦，纯键盘用户按 PgDn/空格无法滚动正文 --><main class="main-content" tabindex="0" aria-label="正文内容" data-astro-cid-z4jru4n3><div class="max-w-3xl mx-auto px-6 py-12" data-astro-cid-ruv7hgo6><article data-astro-cid-ruv7hgo6><header class="mb-8" data-astro-cid-ruv7hgo6><h1 class="font-serif text-3xl font-semibold mb-3" data-astro-cid-ruv7hgo6>一个区分i人和e人的观点</h1><div class="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-500" data-astro-cid-ruv7hgo6><time datetime="2026-03-15T00:00:00.000Z" data-astro-cid-ruv7hgo6>2026年3月15日</time><span class="tag-badge" data-astro-cid-ruv7hgo6>随想</span></div><div class="flex flex-wrap gap-2 mt-4" data-astro-cid-ruv7hgo6><span class="tag-badge" data-astro-cid-ruv7hgo6>人生</span></div></header><div class="prose-custom" data-astro-cid-ruv7hgo6><p>让我印象比较深刻的一个区分i人和e人的观点：疲惫时通过何种方式给自己充电？i人一般会依赖独处而e人会依赖社交。而不是简单地评判社交能力的好坏，就比如撒贝宁老师其实是i人，i人未必处理不好社交关系。</p>
+<p>有点私心的讲，我倾向于认为i人更能够“成大事”，因为独处与冷静思考乃至与自己对话是一种能力，“向内求”对个体的自我发展至关重要。</p></div></article><div class="mt-12 pt-8 border-t border-gray-100 dark:border-gray-800" data-astro-cid-ruv7hgo6><a href="/" class="text-sm text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors" data-astro-cid-ruv7hgo6>&larr; 返回时间线</a></div></div></main></div></div><!-- 阅读进度条（顶部） + 回到顶部按钮 --><div id="readingProgress" class="reading-progress" aria-hidden="true" data-astro-cid-z4jru4n3></div><button id="backToTop" class="back-to-top" aria-label="回到顶部" title="回到顶部" data-astro-cid-z4jru4n3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-z4jru4n3><polyline points="18 15 12 9 6 15" data-astro-cid-z4jru4n3></polyline></svg></button><script>
+      (function () {
+        // 阅读进度条 + 回到顶部（兼容桌面 .main-content 滚动与移动端 window 滚动）
+        var progress = document.getElementById('readingProgress');
+        var backTop = document.getElementById('backToTop');
+        if (!progress || !backTop) return;
+        var main = document.querySelector('.main-content');
+        var raf = 0;
+
+        function getScroller() {
+          if (main) {
+            var ov = getComputedStyle(main).overflowY;
+            if (ov === 'auto' || ov === 'scroll') return main;
+          }
+          return window;
+        }
+
+        function update() {
+          raf = 0;
+          var scroller = getScroller();
+          var el = scroller === window ? document.documentElement : scroller;
+          // is:inline 纯 JS：用 'in' 运行时收窄，规避 Window/Element 联合类型上 scrollTop 的 TS 报错
+          var scrollTop = scroller === window
+            ? (window.scrollY || document.documentElement.scrollTop || 0)
+            : ('scrollTop' in el ? el.scrollTop : 0);
+          var max = 'scrollHeight' in el ? el.scrollHeight - el.clientHeight : 0;
+          var pct = max > 0 ? Math.min(1, Math.max(0, scrollTop / max)) : 0;
+          // clip-path 裁剪：元素全宽渲染，只显示已读部分，避免缩放模糊
+          progress.style.clipPath = 'inset(0 ' + ((1 - pct) * 100).toFixed(2) + '% 0 0)';
+          var show = scrollTop > 600;
+          backTop.style.opacity = show ? '1' : '0';
+          backTop.style.pointerEvents = show ? 'auto' : 'none';
+        }
+
+        function onScroll() {
+          if (raf) return;
+          raf = requestAnimationFrame(update);
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        if (main) main.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll, { passive: true });
+        update();
+
+        backTop.addEventListener('click', function () {
+          var scroller = getScroller();
+          if (scroller === window) window.scrollTo({ top: 0, behavior: 'smooth' });
+          else scroller.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      })();
+    </script><script type="module" src="/_astro/BaseLayout.astro_astro_type_script_index_0_lang.CLNLtrM5.js"></script></body></html>
