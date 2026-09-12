@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- 品牌 favicon：与 og-default 同构——品牌绿底 + 白色 sans「Z」（#397354） -->
+  <rect width="32" height="32" rx="6" fill="#397354"/>
+  <text x="16" y="22" text-anchor="middle" fill="white" font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-size="18" font-weight="700">Z</text>
+</svg>
