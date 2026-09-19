@@ -1,0 +1,35 @@
+# 全站：禁止 iframe 内嵌（点击劫持防护）。页面从不被第三方内嵌，零副作用；
+# 与下方 /_astro/*、/fonts/*.woff2 规则叠加（多规则命中时继承所有 headers）
+# 说明：referrer-policy 与 x-content-type-options 不在本文件声明——线上主域实测已带
+# （来源在 Cloudflare 侧，非本仓库），而本文件只对 CF Pages 生效，GitHub Pages 会原样
+# 发布但不应用规则，故镜像域这两条也没有
+/*
+  X-Frame-Options: DENY
+
+# 关闭本站用不到的浏览器能力（传感器 / 摄像头 / 麦克风 / 支付 / USB / DRM / 屏幕捕获 /
+# 话题广告）。零功能影响、无需改代码或标记即可生效。
+# 两处刻意不关：clipboard-write（代码块复制按钮用 navigator.clipboard.writeText）、
+# fullscreen（灯箱）；关掉前者会静默弄坏复制按钮。
+# Permissions-Policy 没有 <meta> 等价物，只能走响应头 → 仅 CF Pages 生效，
+# GitHub 镜像域拿不到（与上面 XFO 同因）
+/*
+  Permissions-Policy: accelerometer=(), autoplay=(), browsing-topics=(), camera=(), display-capture=(), encrypted-media=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), xr-spatial-tracking=()
+
+# 仅对 Cloudflare Pages 生效（GitHub Pages 会原样发布此文件但不应用规则）
+# /_astro/* 文件名含内容哈希，immutable 安全
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# PWA 清单：MIME 必须正确，Chrome 才认（缺失时安装条件不成立且只在控制台提示）
+# 注：本规则同样只在 CF 生效；GitHub 镜像域按扩展名自行推断，可能是 octet-stream，
+# 装到主屏那条路以主域为准
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+
+# 仅字体二进制（.woff2）吃 immutable；fonts.css 不在本规则内，走默认协商缓存、改动即生效。
+# 全部 woff2 文件名自带内容哈希（sha256 前 8 位）：NotoSerifSC 分片由 subset-fonts.py 生成时
+# 自动命名，Inter 整包由同一脚本 normalize_inter 改名归一（升级时重跑脚本即可）；
+# check-budget.mjs 构建期断言"文件名哈希 == 内容哈希"，忘了改名会直接构建失败
+#（见 README「部署 → 缓存」「字体分片维护」）
+/fonts/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
