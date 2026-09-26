@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- 品牌标记（全站基准）：3×3 热力网格，亮格在 0 起编号的 1、2、3、8 位
+       （上排右二、中排左一、下排右一，共 4 亮 5 空）。
+       几何与色值为唯一权威定义——scripts/gen-icons.mjs 逐格比对本文件与
+       src/components/BrandMark.astro（几何与填色都比），任一处手改而另一处没跟上会直接报错；
+       PNG 资产（favicon-32/48、apple-touch-icon、PWA 图标）均由该脚本由此文件光栅化。
+       改这里之后必须重跑：node scripts/gen-icons.mjs -->
+  <rect width="32" height="32" rx="6" fill="#397354"/>
+  <rect x="4.4" y="4.4" width="6.4" height="6.4" rx="1.8" fill="#122c1c"/>
+  <rect x="12.8" y="4.4" width="6.4" height="6.4" rx="1.8" fill="#f8f4ec"/>
+  <rect x="21.2" y="4.4" width="6.4" height="6.4" rx="1.8" fill="#f8f4ec"/>
+  <rect x="4.4" y="12.8" width="6.4" height="6.4" rx="1.8" fill="#f8f4ec"/>
+  <rect x="12.8" y="12.8" width="6.4" height="6.4" rx="1.8" fill="#122c1c"/>
+  <rect x="21.2" y="12.8" width="6.4" height="6.4" rx="1.8" fill="#122c1c"/>
+  <rect x="4.4" y="21.2" width="6.4" height="6.4" rx="1.8" fill="#122c1c"/>
+  <rect x="12.8" y="21.2" width="6.4" height="6.4" rx="1.8" fill="#122c1c"/>
+  <rect x="21.2" y="21.2" width="6.4" height="6.4" rx="1.8" fill="#f8f4ec"/>
+</svg>
