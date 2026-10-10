@@ -1,0 +1,474 @@
+<!DOCTYPE html><html lang="zh-CN" data-astro-cid-z4jru4n3><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><!-- 错误缓冲放到最前：它要覆盖的正是紧随其后的三段内联脚本（劫持守卫/主题/字号），
+         而模块化的上报器要等 HTML 解析完才执行（见组件内注释） --><script>
+  // 上限 20 条即止：errorWatch 接管后会把 __errbuf 置空，此监听随之失效
+  window.__errbuf = [];
+  var __bufPush = function (item) {
+    try {
+      var b = window.__errbuf;
+      if (b && b.length < 20) b.push(item);
+    } catch (_) { /* 缓冲本身绝不能再抛错 */ }
+  };
+  window.addEventListener('error', function (e) {
+    var t = e.target;
+    // 资源加载失败（script/link/img）只在捕获阶段到达 window，且没有 message
+    if (t && t.tagName && /^(SCRIPT|LINK|IMG)$/.test(t.tagName)) {
+      __bufPush({ type: 'early-resource', message: t.tagName + ' 加载失败: ' + String(t.src || t.href || ''), source: String(t.src || t.href || ''), line: 0 });
+      return;
+    }
+    __bufPush({ type: 'early', message: String(e.message || ''), source: String(e.filename || ''), line: e.lineno || 0 });
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e.reason;
+    __bufPush({ type: 'early-rejection', message: String((r && r.message) || r || ''), source: '', line: 0 });
+  });
+</script><!-- 点击劫持兜底：Cloudflare Pages 侧由 public/_headers 的 X-Frame-Options: DENY
+         覆盖，但 GitHub Pages 不会应用 _headers（实测镜像域响应头既无 XFO 也无 CSP），
+         站点是双端部署的，镜像域可被任意页面 iframe 内嵌。被内嵌时把顶层窗口
+         导航到本页；顶层跨域时浏览器会抛错，属预期（此时也无法取得其引用）。
+         放在 head 最前，尽量早于任何渲染。 --><script>
+      if (window.top !== window.self) {
+        try { window.top.location = window.self.location; } catch (e) {}
+      }
+    </script><!-- 主题初始化：必须放在任何样式表之前同步执行，避免深色模式导航新页面时白闪（FOUC） --><script>
+      (function() {
+        var stored = null;
+        try { stored = localStorage.getItem('theme'); } catch (e) {}
+        // 主题优先级：用户手动选择 > 系统 prefers-color-scheme。
+        // 用户手动选择过（dark/light）时直接采用；未选择过时跟随系统深色/浅色。
+        var isDark;
+        if (stored === 'dark' || stored === 'light') {
+          isDark = stored === 'dark';
+        } else {
+          isDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        }
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        }
+        // 原生跨文档 View Transitions 过渡期间，首帧按主题设置根元素颜色方案，
+        // 避免新页面以浅色背景渲染一瞬（旧页淡出/新页淡入交叠时的背景色闪变）
+        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+      })();
+    </script><!-- 阅读偏好初始化（字号 + 字体族 + 正文字重 + 代码块折行）：紧随主题脚本，样式渲染前落位，防字体族切换闪变 --><script>
+  (function () {
+    // 字号：与 TypoControls 同口径夹取到 [13,28]（越界脏值也夹取而非忽略），
+    // 保证首帧生效字号与面板显示值一致；未设置过时默认 20px（不再是浏览器默认 16px）。
+    // 写入 --read-fs 变量而非根字号：根字号会带动全站 rem（顶栏按钮/徽章等 UI
+    // 一起膨胀变形），变量只有正文容器消费（见 global.css），兑现"仅作用于正文排版"
+    // 读取可能抛异常（隐私模式 / 禁用 Cookie / 沙箱化 iframe），但**写入必须无条件
+    // 执行**：此前 setProperty 也在 try 内，localStorage 一抛就整段跳过，--read-fs
+    // 不落位 → 正文回落到 CSS 的 var(--read-fs, 1rem) 兜底（16px），而 Aa 面板读
+    // 的是 JS 常量 DEFAULT_FONT_SIZE（20px），显示值与生效值背离（review 2026-09-12）。
+    // 把默认值提到 try 外、只把读取包进 try，单点修复即可，无需改 8 处 CSS 兜底
+    var fs = 20;
+    try {
+      var storedFs = parseInt(localStorage.getItem('fontSize'), 10);
+      if (!isNaN(storedFs)) fs = storedFs;
+    } catch (e) {}
+    fs = Math.min(28, Math.max(13, fs));
+    document.documentElement.style.setProperty('--read-fs', fs + 'px');
+    // 字体族：仅 serif 需要显式标记，sans 为默认（不设属性）
+    try {
+      var ff = localStorage.getItem('fontFamily');
+      if (ff === 'serif') {
+        document.documentElement.setAttribute('data-font', ff);
+      }
+    } catch (e) {}
+    // 正文字重：仅加粗需显式标记，常规为默认（不设属性）
+    try {
+      if (localStorage.getItem('fontBold') === '1') {
+        document.documentElement.setAttribute('data-font-bold', '');
+      }
+    } catch (e) {}
+    // 代码块折行：开启时给根元素打标记（CSS 软折行并隐藏行号列），
+    // 开关按钮在各代码块工具区（见 utils/codeBlockEnhance.ts）。默认关闭（不折行）
+    try {
+      if (localStorage.getItem('codeWrap') === '1') {
+        document.documentElement.setAttribute('data-code-wrap', '');
+      }
+    } catch (e) {}
+  })();
+</script><!-- 兜底：样式表尚未加载时，根元素背景与主题一致，防止白闪。
+         注意：#f8f4ec / #121212 是 global.css 中 --bg（html:not(.dark) / :root 两档）的硬编码
+         副本——此处内联样式早于外部 CSS 执行、取不到 CSS 变量，只能写死；改动 --bg 时必须
+         同步这两个值，否则首屏兜底色会与真实主题色不符。 --><style>
+      html { background-color: #f8f4ec; }
+      html.dark { background-color: #121212; }
+    </style><link rel="icon" type="image/svg+xml" href="/favicon.svg"><!-- PNG 兜底：Safari 不支持 SVG favicon；apple-touch-icon 供 iOS 加主屏（全出血无圆角，系统自叠遮罩） --><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"><link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><!-- 添加到主屏（PWA manifest）：站点静态双端部署，manifest 与图标都是静态资源，
+         无需 Service Worker 也能被 Chrome 判定为可安装（2024 版安装标准已去掉 SW 硬要求）；
+         代价是装到主屏后没有离线能力（断网仍是浏览器离线页）。图标由 scripts/gen-icons.mjs 生成 --><link rel="manifest" href="/manifest.webmanifest"><!-- 浏览器 UI 配色（安卓 Chrome 地址栏）：按系统偏好给两档。注意用户在本站手动切主题时
+         浏览器仍按系统偏好取用，可能出现 chrome 色与页面底色不一致——零 JS 换来的可接受偏差 --><meta name="theme-color" content="#f8f4ec" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)"><!-- iOS 独立窗口需 legacy meta：WebKit 对 manifest 的 display 支持不完整 --><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Rodney 博客"><link rel="preload" href="/fonts/fonts.css?v=1" as="style"><link rel="stylesheet" href="/fonts/fonts.css?v=1"><title>从秦始皇的秤砣到光机滑台：从一杆秤解释精度 — Rodney Zhang&#39;s Blog</title><meta name="description" content="以精度为引子的工程思维"><link rel="canonical" href="https://rodneyzhang.com/posts/20261004-%E4%BB%8E%E7%A7%A6%E5%A7%8B%E7%9A%87%E7%9A%84%E7%A7%A4%E7%A0%A3%E5%88%B0%E5%85%89%E6%9C%BA%E6%BB%91%E5%8F%B0-%E4%BB%8E%E4%B8%80%E6%9D%86%E7%A7%A4%E8%A7%A3%E9%87%8A%E7%B2%BE%E5%BA%A6/"><!-- 站点验证：百度 + Google（meta 标签方式，避免 Cloudflare Pages 对 .html 的 308 跳转导致文件验证失败） --><meta name="baidu-site-verification" content="codeva-LFlrP7rYFV"><meta name="google-site-verification" content="google8a09aa7dbeeba943"><meta property="og:title" content="从秦始皇的秤砣到光机滑台：从一杆秤解释精度 — Rodney Zhang's Blog"><meta property="og:description" content="以精度为引子的工程思维"><meta property="og:image" content="https://rodneyzhang.com/images/og-default.png"><meta property="og:url" content="https://rodneyzhang.com/posts/20261004-%E4%BB%8E%E7%A7%A6%E5%A7%8B%E7%9A%87%E7%9A%84%E7%A7%A4%E7%A0%A3%E5%88%B0%E5%85%89%E6%9C%BA%E6%BB%91%E5%8F%B0-%E4%BB%8E%E4%B8%80%E6%9D%86%E7%A7%A4%E8%A7%A3%E9%87%8A%E7%B2%BE%E5%BA%A6/"><meta property="og:type" content="article"><meta property="og:site_name" content="Rodney Zhang's Blog"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="从秦始皇的秤砣到光机滑台：从一杆秤解释精度 — Rodney Zhang's Blog"><meta name="twitter:description" content="以精度为引子的工程思维"><meta name="twitter:image" content="https://rodneyzhang.com/images/og-default.png"><link rel="alternate" type="application/rss+xml" title="Rodney Zhang's Blog" href="https://rodneyzhang.com/rss.xml"><!-- 隐藏的作者信息：不参与页面可见渲染，仅供搜索引擎抓取建立人名↔站点关联 --><meta name="author" content="张偌迪"><!-- 隐藏关键词：完全不渲染给访客，Google 已不采用，但百度仍给轻微权重，覆盖人名/博客写法与主题 --><meta name="keywords" content="张偌迪,张偌迪的博客,Rodney Zhang,Zhang Ruodi,Rodney Zhang's Blog,个人博客,独立博客,随笔,随想,思考,AI,笔记"><script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"张偌迪","alternateName":["Rodney Zhang","Zhang Ruodi","张偌迪的博客","Rodney Zhang's Blog"],"url":"https://rodneyzhang.com/","description":"张偌迪（Rodney Zhang）的个人独立博客，记录随想与思考。","sameAs":["https://github.com/rd-zzzz"]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"张偌迪的博客","alternateName":["Rodney Zhang Blog","Rodney Zhang's Blog"],"url":"https://rodneyzhang.com/","inLanguage":"zh-CN","author":{"@type":"Person","name":"张偌迪","url":"https://rodneyzhang.com/"}}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"从秦始皇的秤砣到光机滑台：从一杆秤解释精度","description":"以精度为引子的工程思维","datePublished":"2026-10-04T00:00:00.000Z","dateModified":"2026-10-04T00:00:00.000Z","author":{"@type":"Person","name":"张偌迪","url":"https://rodneyzhang.com/"},"publisher":{"@type":"Person","name":"张偌迪"},"image":"https://rodneyzhang.com/images/og-default.png","wordCount":10427,"mainEntityOfPage":"https://rodneyzhang.com/posts/20261004-%E4%BB%8E%E7%A7%A6%E5%A7%8B%E7%9A%87%E7%9A%84%E7%A7%A4%E7%A0%A3%E5%88%B0%E5%85%89%E6%9C%BA%E6%BB%91%E5%8F%B0-%E4%BB%8E%E4%B8%80%E6%9D%86%E7%A7%A4%E8%A7%A3%E9%87%8A%E7%B2%BE%E5%BA%A6/","inLanguage":"zh-CN"}</script><link rel="stylesheet" href="/_astro/_slug_.BDaZonB_.css"><link rel="stylesheet" href="/_astro/global.DjC_CdTN.css"><style>.article-body[data-astro-cid-z4jru4n3]{-webkit-font-smoothing:antialiased;background:var(--bg);height:100dvh;color:var(--text-emphasize);font-family:Inter,-apple-system,PingFang SC,Hiragino Sans GB,Microsoft YaHei,Noto Sans CJK SC,sans-serif;overflow:hidden}.article-container[data-astro-cid-z4jru4n3]{flex-direction:column;height:100%;display:flex}.topbar[data-astro-cid-z4jru4n3]{border-bottom:1px solid var(--line-light);background:var(--bg);flex-shrink:0;align-items:center;display:flex}.topbar-inner[data-astro-cid-z4jru4n3]{justify-content:space-between;align-items:center;width:100%;max-width:1080px;margin:0 auto;padding:14px 40px;display:flex}.topbar-left[data-astro-cid-z4jru4n3]{align-items:center;gap:12px;display:flex}.breadcrumb[data-astro-cid-z4jru4n3]{color:var(--text-emphasize);border-radius:var(--corner-radius-medium);transition:color var(--dur-base), background-color var(--dur-base);white-space:nowrap;align-items:center;padding:4px 6px;font-size:16px;font-weight:600;text-decoration:none;display:inline-flex}.breadcrumb[data-astro-cid-z4jru4n3]:hover{color:var(--green);background:var(--hover-bg)}.wordmark-short[data-astro-cid-z4jru4n3]{display:none}.topbar-right[data-astro-cid-z4jru4n3]{align-items:center;gap:8px;display:flex}.back-link[data-astro-cid-z4jru4n3]{color:var(--text-subtle);border-radius:var(--corner-radius-medium);transition:color var(--dur-base), background-color var(--dur-base);white-space:nowrap;flex-shrink:0;padding:4px 8px;font-size:13px;text-decoration:none}.back-link[data-astro-cid-z4jru4n3]:hover{color:var(--text-emphasize);background:var(--hover-bg)}.topbar-link[data-astro-cid-z4jru4n3]{color:var(--text-subtle);border-radius:var(--corner-radius-medium);transition:color var(--dur-base), background-color var(--dur-base);white-space:nowrap;flex-shrink:0;padding:6px 12px;font-size:14px;text-decoration:none}.topbar-link[data-astro-cid-z4jru4n3]:hover{color:var(--text-emphasize);background:var(--hover-bg)}.main-container[data-astro-cid-z4jru4n3]{flex:1;overflow:hidden}.main-content[data-astro-cid-z4jru4n3]{height:100%;padding:24px;overflow:hidden auto}.main-content[data-astro-cid-z4jru4n3]:focus,.main-content[data-astro-cid-z4jru4n3]:focus-visible{outline:none}@media (width<=768px){.article-body[data-astro-cid-z4jru4n3]{height:auto;overflow:auto}.topbar[data-astro-cid-z4jru4n3]{z-index:100;position:sticky;top:0}.topbar-inner[data-astro-cid-z4jru4n3]{padding-left:16px;padding-right:16px}.article-container[data-astro-cid-z4jru4n3]{height:auto}.main-container[data-astro-cid-z4jru4n3]{overflow:visible}.main-content[data-astro-cid-z4jru4n3]{padding:16px;overflow:visible}}@media (width<=479px){.back-link[data-astro-cid-z4jru4n3]{display:none}}@media (width<=400px){.topbar-inner[data-astro-cid-z4jru4n3]{padding-left:12px;padding-right:12px}.wordmark-full[data-astro-cid-z4jru4n3]{display:none}.wordmark-short[data-astro-cid-z4jru4n3]{display:inline}}.reading-progress[data-astro-cid-z4jru4n3]{background:linear-gradient(90deg, var(--green), var(--contribution-level4));clip-path:inset(0 100% 0 0);z-index:1001;pointer-events:none;width:100%;height:4px;position:fixed;top:0;left:0}.back-to-top[data-astro-cid-z4jru4n3]{border:1px solid var(--line-light);background:var(--card-bg);width:40px;height:40px;color:var(--text-emphasize);cursor:pointer;opacity:0;pointer-events:none;transition:opacity var(--dur-base), background-color var(--dur-base);z-index:1000;border-radius:50%;justify-content:center;align-items:center;display:flex;position:fixed;bottom:24px;right:24px;box-shadow:0 2px 10px #00000040}.back-to-top[data-astro-cid-z4jru4n3]:hover{background:var(--hover-bg)}
+</style></head><body class="article-body" data-astro-cid-z4jru4n3><a class="skip-link" href="#mainContent" data-astro-cid-z4jru4n3>跳到正文</a><div class="article-container" data-astro-cid-z4jru4n3><!-- 顶栏 --><div class="topbar" data-astro-cid-z4jru4n3><div class="topbar-inner" data-astro-cid-z4jru4n3><div class="topbar-left" data-astro-cid-z4jru4n3><!-- 可访问名交给 aria-label：徽标（svg，aria-hidden）与 full/short 两段文字都不进
+                 可访问树，否则与 aria-label 重复报读站名（review 2026-09-16 无障碍审查第 14 条） --><a href="/" class="breadcrumb" aria-label="Rodney Zhang's Blog 首页" data-astro-cid-z4jru4n3><svg class="wordmark-mark" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="6" fill="#397354"></rect><rect x="4.4" y="4.4" width="6.4" height="6.4" rx="1.8" fill="#122c1c"></rect><rect x="12.8" y="4.4" width="6.4" height="6.4" rx="1.8" fill="#f8f4ec"></rect><rect x="21.2" y="4.4" width="6.4" height="6.4" rx="1.8" fill="#f8f4ec"></rect><rect x="4.4" y="12.8" width="6.4" height="6.4" rx="1.8" fill="#f8f4ec"></rect><rect x="12.8" y="12.8" width="6.4" height="6.4" rx="1.8" fill="#122c1c"></rect><rect x="21.2" y="12.8" width="6.4" height="6.4" rx="1.8" fill="#122c1c"></rect><rect x="4.4" y="21.2" width="6.4" height="6.4" rx="1.8" fill="#122c1c"></rect><rect x="12.8" y="21.2" width="6.4" height="6.4" rx="1.8" fill="#122c1c"></rect><rect x="21.2" y="21.2" width="6.4" height="6.4" rx="1.8" fill="#f8f4ec"></rect></svg><span class="wordmark-full" aria-hidden="true" data-astro-cid-z4jru4n3>Rodney Zhang's Blog</span><span class="wordmark-short" aria-hidden="true" data-astro-cid-z4jru4n3>Rodney Zhang</span></a><a href="/" class="back-link" data-astro-cid-z4jru4n3>← 返回</a></div><div class="topbar-right" data-astro-cid-z4jru4n3><div class="typo-wrap"><button class="topbar-icon-btn typo-btn" id="typoBtn" type="button" aria-label="排版设置" aria-haspopup="true" aria-expanded="false" aria-controls="typoPop" title="排版设置"><!-- Aa 用字体渲染文本（与原 A−/A+ 按钮同机制，hinting 锐利不糊）；
+         font-size 22px → cap 高 ≈15.8px，与太阳图标整体（16.5px）像素对齐 --><span class="typo-btn-glyph" aria-hidden="true">Aa</span></button><div class="typo-pop" id="typoPop" role="group" aria-label="阅读偏好" tabindex="-1"><div class="typo-row"><span class="typo-label">字号</span><button class="typo-step" id="fontDecrease" type="button" aria-label="减小字号">−</button><span class="typo-size" id="typoSizeVal">20</span><button class="typo-step" id="fontIncrease" type="button" aria-label="增大字号">+</button></div><div class="typo-row"><span class="typo-label">字体</span><div class="typo-seg" id="fontFamilySeg" role="radiogroup" aria-label="正文字体"><button class="typo-seg-item active" data-font="sans" type="button" role="radio" aria-checked="true">无衬线</button><button class="typo-seg-item" data-font="serif" type="button" role="radio" aria-checked="false">衬线</button></div></div><div class="typo-row"><span class="typo-label">加粗</span><div class="typo-seg" id="fontBoldSeg" role="radiogroup" aria-label="正文字重"><button class="typo-seg-item active" data-bold="0" type="button" role="radio" aria-checked="true">常规</button><button class="typo-seg-item" data-bold="1" type="button" role="radio" aria-checked="false">加粗</button></div></div><p class="typo-hint">仅作用于正文排版</p></div></div><script>
+  (function () {
+    var FONT_SIZES = [13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28];
+    var DEFAULT_FONT_SIZE = 20;
+
+    var btn = document.getElementById('typoBtn');
+    var pop = document.getElementById('typoPop');
+    var dec = document.getElementById('fontDecrease');
+    var inc = document.getElementById('fontIncrease');
+    var val = document.getElementById('typoSizeVal');
+    var fontSeg = document.getElementById('fontFamilySeg');
+    var boldSeg = document.getElementById('fontBoldSeg');
+    if (!btn || !pop) return;
+
+    function getFontSize() {
+      try {
+        var stored = parseInt(localStorage.getItem('fontSize'), 10);
+        // 夹取到 [13,28] 区间（连续整数，非 FONT_SIZES 严格档位；区间内非档位值
+        // 由步进按钮的 indexOf 分支纠偏），与 TypoInit 的生效口径一致：
+        // 脏值（如越界/损坏）时面板显示值与实际生效值保持一致
+        if (!isNaN(stored)) return Math.min(28, Math.max(13, stored));
+        return DEFAULT_FONT_SIZE;
+      } catch (e) {
+        return DEFAULT_FONT_SIZE;
+      }
+    }
+
+    function applyFontSize(size) {
+      // 统一夹取 [13,28]：storage 多标签页同步/脏值写入也走此函数，
+      // 避免另一标签页写入越界值时本页以越界值渲染并回写。
+      // 写 --read-fs 变量而非根字号：根字号会带动全站 rem（顶栏按钮/徽章等 UI
+      // 一起膨胀变形），变量只有正文容器消费（见 global.css）
+      size = Math.min(28, Math.max(13, size));
+      document.documentElement.style.setProperty('--read-fs', size + 'px');
+      if (val) val.textContent = size;
+      try { localStorage.setItem('fontSize', size); } catch (e) {}
+    }
+
+    function getFontFamily() {
+      try {
+        var stored = localStorage.getItem('fontFamily');
+        return stored === 'serif' ? stored : 'sans';
+      } catch (e) {
+        return 'sans';
+      }
+    }
+
+    // 同步字体分段控件高亮（含 aria-checked）
+    function syncFontUI(valid) {
+      if (!fontSeg) return;
+      var items = fontSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < items.length; i++) {
+        var active = items[i].getAttribute('data-font') === valid;
+        items[i].classList.toggle('active', active);
+        items[i].setAttribute('aria-checked', active ? 'true' : 'false');
+      }
+    }
+
+    function applyFontFamily(f) {
+      var valid = f === 'serif' ? 'serif' : 'sans';
+      if (valid === 'sans') {
+        document.documentElement.removeAttribute('data-font');
+      } else {
+        document.documentElement.setAttribute('data-font', valid);
+      }
+      syncFontUI(valid);
+      try { localStorage.setItem('fontFamily', valid); } catch (e) {}
+    }
+
+    // ===== 正文字重（加粗） =====
+    function getFontBold() {
+      try {
+        return localStorage.getItem('fontBold') === '1';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function syncBoldUI(on) {
+      if (!boldSeg) return;
+      var items = boldSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < items.length; i++) {
+        var active = (items[i].getAttribute('data-bold') === '1') === on;
+        items[i].classList.toggle('active', active);
+        items[i].setAttribute('aria-checked', active ? 'true' : 'false');
+      }
+    }
+
+    function applyFontBold(on) {
+      if (on) {
+        document.documentElement.setAttribute('data-font-bold', '');
+      } else {
+        document.documentElement.removeAttribute('data-font-bold');
+      }
+      syncBoldUI(on);
+      try { localStorage.setItem('fontBold', on ? '1' : '0'); } catch (e) {}
+    }
+
+    // 面板显示值与存储同步（页面加载时执行一次）
+    if (val) val.textContent = getFontSize();
+    syncFontUI(getFontFamily());
+    syncBoldUI(getFontBold());
+
+    // ===== 面板开合 =====
+    function setOpen(open, restoreFocus) {
+      pop.classList.toggle('show', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        if (dec) dec.focus();
+        else pop.focus();
+      } else if (restoreFocus) {
+        btn.focus();
+      }
+    }
+
+    btn.addEventListener('click', function () {
+      setOpen(!pop.classList.contains('show'));
+    });
+
+    // 点击面板外部关闭（面板与按钮都在 .typo-wrap 内，无需额外排除按钮）
+    document.addEventListener('click', function (e) {
+      if (!pop.classList.contains('show')) return;
+      if (e.target.closest && e.target.closest('.typo-wrap')) return;
+      setOpen(false, false);
+    });
+
+    // 字体分段选择（面板保持打开，实时看效果；点已选段为幂等写入，无害）
+    if (fontSeg) {
+      var fontItems = fontSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < fontItems.length; i++) {
+        fontItems[i].addEventListener('click', function () {
+          applyFontFamily(this.getAttribute('data-font'));
+        });
+      }
+    }
+
+    // Esc：关面板并还原焦点
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (pop.classList.contains('show')) {
+        e.preventDefault();
+        setOpen(false, true);
+      }
+    });
+
+    // 字号步进（13-28px 12 档，--read-fs 变量缩放正文）
+    if (dec) dec.addEventListener('click', function () {
+      var cur = getFontSize();
+      var idx = FONT_SIZES.indexOf(cur);
+      if (idx > 0) applyFontSize(FONT_SIZES[idx - 1]);
+      else if (cur > FONT_SIZES[0]) applyFontSize(cur - 1);
+    });
+
+    if (inc) inc.addEventListener('click', function () {
+      var cur = getFontSize();
+      var idx = FONT_SIZES.indexOf(cur);
+      if (idx >= 0 && idx < FONT_SIZES.length - 1) applyFontSize(FONT_SIZES[idx + 1]);
+      else if (cur < FONT_SIZES[FONT_SIZES.length - 1]) applyFontSize(cur + 1);
+    });
+
+    // 加粗分段选择（面板保持打开，实时看效果；点已选段为幂等写入，无害）
+    if (boldSeg) {
+      var segItems = boldSeg.querySelectorAll('.typo-seg-item');
+      for (var i = 0; i < segItems.length; i++) {
+        segItems[i].addEventListener('click', function () {
+          applyFontBold(this.getAttribute('data-bold') === '1');
+        });
+      }
+    }
+
+    // 多标签页同步（与 ThemeToggle 的 storage 监听一致）
+    window.addEventListener('storage', function (e) {
+      if (e.key === 'fontSize') {
+        // e.newValue === null 表示该键在另一标签页被删除（= 恢复默认字号）：必须同步回默认，
+        // 否则本页仍沿用旧字号，与源标签页的默认值不一致（原先 parseInt(null)→NaN 被忽略，
+        // 是静默不回退；review 2026-09-10）
+        if (e.newValue === null || e.newValue === '') {
+          // 恢复默认字号：显式写回默认值，与 TypoInit 的兜底同口径。
+          // 不能走 removeProperty——那会回落到 CSS fallback（1rem=16px），
+          // 与面板显示值 DEFAULT_FONT_SIZE 不一致（review 2026-09-11）。
+          // 只改样式与显示值，不回写 localStorage：保持"键已被删除"的语义，
+          // 避免把另一标签页的删除操作又重新撤销
+          document.documentElement.style.setProperty('--read-fs', DEFAULT_FONT_SIZE + 'px');
+          if (val) val.textContent = DEFAULT_FONT_SIZE;
+        } else {
+          var v = parseInt(e.newValue, 10);
+          if (!isNaN(v)) applyFontSize(v);
+        }
+      } else if (e.key === 'fontFamily') {
+        applyFontFamily(e.newValue);
+      } else if (e.key === 'fontBold') {
+        applyFontBold(e.newValue === '1');
+      }
+    });
+  })();
+</script><button id="theme-toggle" class="theme-toggle-btn" aria-label="切换暗色模式" title="切换暗色模式"><span class="block dark:hidden"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span><span class="hidden dark:block"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span></button><script type="module">function e(){document.getElementById(`theme-toggle`)?.setAttribute(`aria-pressed`,document.documentElement.classList.contains(`dark`)?`true`:`false`)}function t(t){let n=document.documentElement;n.classList.toggle(`dark`,t),n.style.colorScheme=t?`dark`:`light`,e()}function n(e){let n=document.documentElement;n.classList.add(`theme-anim`),t(e),window.clearTimeout(window.__themeAnimTimer),window.__themeAnimTimer=window.setTimeout(()=>{n.classList.remove(`theme-anim`)},300)}var r=!1;function i(e,i){let a=document.documentElement,o=document.startViewTransition,s=window.matchMedia(`(prefers-reduced-motion: reduce)`).matches;if(!i||s||typeof o!=`function`||r){n(e);return}a.style.setProperty(`--theme-vt-x`,i.x+`px`),a.style.setProperty(`--theme-vt-y`,i.y+`px`),a.style.setProperty(`--theme-vt-r`,Math.hypot(Math.max(i.x,window.innerWidth-i.x),Math.max(i.y,window.innerHeight-i.y))+`px`),a.classList.add(`theme-vt`),r=!0;try{o.call(document,()=>{t(e)}).finished.catch(()=>{}).finally(()=>{r=!1,a.classList.remove(`theme-vt`)})}catch{r=!1,a.classList.remove(`theme-vt`),n(e)}}e(),document.getElementById(`theme-toggle`)?.addEventListener(`click`,e=>{let t=!document.documentElement.classList.contains(`dark`),n=e.currentTarget.getBoundingClientRect();i(t,{x:n.left+n.width/2,y:n.top+n.height/2});try{localStorage.setItem(`theme`,t?`dark`:`light`)}catch{}}),window.addEventListener(`storage`,e=>{e.key===`theme`&&i(e.newValue===`dark`||e.newValue===`light`?e.newValue===`dark`:!!(window.matchMedia&&window.matchMedia(`(prefers-color-scheme: dark)`).matches))});</script><a href="/about/" class="topbar-link" data-astro-cid-z4jru4n3>关于</a></div></div></div><!-- 主内容区 --><div class="main-container" data-astro-cid-z4jru4n3><!-- tabindex 让滚动容器可被键盘聚焦：桌面布局 body 不可滚，
+             若 main 无法聚焦，纯键盘用户按 PgDn/空格无法滚动正文 --><main class="main-content" id="mainContent" tabindex="0" aria-label="正文内容" data-astro-cid-z4jru4n3><div class="post-shell px-6 py-12 has-toc" data-astro-cid-ruv7hgo6><article data-astro-cid-ruv7hgo6><header class="mb-8" data-astro-cid-ruv7hgo6><h1 class="font-serif text-3xl font-semibold mb-3" data-astro-cid-ruv7hgo6>从秦始皇的秤砣到光机滑台：从一杆秤解释精度</h1><div class="post-meta flex items-center gap-3 text-sm" data-astro-cid-ruv7hgo6><time datetime="2026-10-04T00:00:00.000Z" data-astro-cid-ruv7hgo6>2026年10月4日</time><span class="tag-badge" data-astro-cid-ruv7hgo6>转载</span><span class="reading-time" data-astro-cid-ruv7hgo6>约 22 分钟阅读</span></div><div class="flex flex-wrap gap-2 mt-4" data-astro-cid-ruv7hgo6><a class="tag-badge" href="/?tag=%E7%9F%A5%E8%AF%86" aria-label="查看标签 #知识 的全部笔记" data-astro-cid-ruv7hgo6>知识</a><a class="tag-badge" href="/?tag=%E7%A7%91%E6%8A%80" aria-label="查看标签 #科技 的全部笔记" data-astro-cid-ruv7hgo6>科技</a></div></header><details class="post-toc post-toc-mobile" open data-astro-cid-u7wjlsqt><summary data-astro-cid-u7wjlsqt>目录</summary><nav aria-label="文章目录" data-astro-cid-u7wjlsqt><ol class="post-toc-list" data-astro-cid-u7wjlsqt><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#为什么要统一提法" data-astro-cid-u7wjlsqt>为什么要统一“提法”</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#秤砣统一度量衡的起点" data-astro-cid-u7wjlsqt>秤砣：统一度量衡的起点</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#进制背后都有物理意义" data-astro-cid-u7wjlsqt>进制背后都有物理意义</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#十六两的原因天平是二进制仪器" data-astro-cid-u7wjlsqt>十六两的原因：天平是二进制仪器</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#测量完备性" data-astro-cid-u7wjlsqt>测量完备性</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#杆秤plus-版天平" data-astro-cid-u7wjlsqt>杆秤：Plus 版天平</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#精度的四个概念" data-astro-cid-u7wjlsqt>精度的四个概念</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#一不确定度" data-astro-cid-u7wjlsqt>（一）不确定度</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#二分辨率" data-astro-cid-u7wjlsqt>（二）分辨率</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#三重复定位精度" data-astro-cid-u7wjlsqt>（三）重复定位精度</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#四绝对定位精度" data-astro-cid-u7wjlsqt>（四）绝对定位精度</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#四个概念的验证与量级" data-astro-cid-u7wjlsqt>四个概念的验证与量级</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#老太太穿针基准闭环与有效分辨率" data-astro-cid-u7wjlsqt>老太太穿针：基准、闭环与有效分辨率</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#落到滑台设计" data-astro-cid-u7wjlsqt>落到滑台设计</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#不确定性出在哪里" data-astro-cid-u7wjlsqt>不确定性出在哪里？</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#重复定位精度靠谁" data-astro-cid-u7wjlsqt>重复定位精度靠谁？</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#绝对定位精度怎么提" data-astro-cid-u7wjlsqt>绝对定位精度怎么提？</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#微分头座一个零件还是两个零件" data-astro-cid-u7wjlsqt>微分头座：一个零件还是两个零件</a></li></ol></nav></details><script type="module">var e=Array.from(document.querySelectorAll(`.prose-custom :is(h2, h3)[id]`)),t=Array.from(document.querySelectorAll(`.post-toc a[href^="#"]`));if(e.length>0&&t.length>0){let n=new Map;for(let e of t){let t=(e.getAttribute(`href`)||`?`).slice(1),r=n.get(t);r?r.push(e):n.set(t,[e])}let r=null,i=0,a=()=>{i=0;let t=null;for(let n of e)if(n.getBoundingClientRect().top<=96)t=n.id;else break;t!==r&&(r=t,n.forEach((e,n)=>{let r=n===t;for(let t of e)t.classList.toggle(`is-active`,r),r?t.setAttribute(`aria-current`,`location`):t.removeAttribute(`aria-current`)}))},o=()=>{i||=requestAnimationFrame(a)};document.addEventListener(`scroll`,o,{capture:!0,passive:!0}),window.addEventListener(`resize`,o,{passive:!0}),window.addEventListener(`hashchange`,o),a()}</script><div class="prose-custom" data-astro-cid-ruv7hgo6><blockquote>
+<p>引言：翻出去年实习时的一次例会录屏。D 主管从杆秤、天平一路讲到光机滑台的精度，把精度拆成了相差四个量级的四个概念。流畅的逻辑和工程思维带来了很大启发，全文整理如下：</p>
+</blockquote>
+<h2 id="为什么要统一提法">为什么要统一“提法”</h2>
+<p>其实我平时不太喜欢讲常规产品。每次讲常规产品，一讲就是五六节，咱们这次时间来不及，就先说点简单的，稍微串讲一下。具体产品我就不讲了，大家可以回去看样本，有不会的可以问我。今天只泛泛地讲几个概念，咱们以后做交流的时候，围绕这几个概念去聊，就有共同语言了。</p>
+<p>我们之间最核心的就是共同语言，最忌讳的就是鸡同鸭讲。什么时候最容易鸡同鸭讲？跟客户。尤其最近接触了好多客户，客户提了好多需求，提法的说法跟我们的说法都不一样。客户说“我想做这个”，我们不认他这个提法；我们说我们的，客户也不认。最后做设计方案、跟客户对接的过程当中，特别容易把它带跑偏。所以今天就把这几个提法讲透，大家把概念搞懂，再做相关产品，交流障碍会少很多。</p>
+<h2 id="秤砣统一度量衡的起点">秤砣：统一度量衡的起点</h2>
+<p>先讲点历史。</p>
+<p>这个玩意儿叫天平，旁边这个东西叫铜权，权力的“权”，说白了就是秤砣。图上这个秤砣，是秦始皇统一度量衡时用的标准秤砣。</p>
+<p>咱们当机械工程师的，老有一句话：你做的东西什么永远不坏？造秤砣的。我就是造秤砣的，代表我做的产品永远不会坏。秦始皇留下的秤砣摆在那儿，可咱们做的其他玩意儿，哪能做到像秤砣一样？越简单的东西越不容易坏。历史上统一度量衡，所有的起点就是秦始皇的这个秤砣。</p>
+<p>所以咱们设计滑台的时候，脑子里要有一个概念：什么东西是我的秤砣？秤砣就是我的精度来源，而体现我精度来源的方式，就是我做的那杆秤。</p>
+<h2 id="进制背后都有物理意义">进制背后都有物理意义</h2>
+<p>旁边这个叫天平。天平这种东西一直用到解放前；历史上更常见的杆秤，到宋朝才出现。而天平，你可以认为在商朝、商周，甚至更早的时候可能就有了。它的功能非常简单：让左右两边的东西等重。它的精度来源是秤砣，应用原理就是让左右两边相等。</p>
+<p>为什么这个东西重要？这里要引入一个“进制”的概念，大家现在可能没概念，我展开讲。</p>
+<p>你们想过没有：古代一斤等于十六两，“半斤八两”有没有印象？当时我就奇怪，为什么一斤等于十六两？如果我现在不是工程师，是个文化学者，穿一个对襟小袄、梳一个胡子，我可以给你这么讲：为什么这杆秤要分十六两呢？因为秤是范蠡做的，范蠡是商界的始祖，他怕大家缺斤短两，于是先取天上的北斗七星作为前七星，再取南斗六星做六颗星，后面再加福、禄、寿三星，少一两减福，再少一两减禄，再少一两减寿，告诫大家不可缺斤短两。</p>
+<p>故事可以这么讲，但故事只是故事：范蠡那会儿杆秤还没出现，十六两制可能已经有了，但“秤是范蠡发明”是靠不住的。</p>
+<p>作为工程师，咱们讲真东西。进制这件事特别重要：用什么进制？</p>
+<ul>
+<li>为什么螺钉是 M2、M4、M6？因为咱们相关的刀具和测量量具是二进制体系的。</li>
+<li>为什么计算机、单片机底层运算是二进制？因为 CPU 的数字门电路基础就是二进制。</li>
+<li>为什么角度是 360 进制？因为咱们观测天象用 360 进制，测角度是 360，历法也跟它挂钩。</li>
+<li>为什么一年约 360 天对应一圈？因为 360 天的时候正好绕太阳一圈，所以天时用到 360 进制。</li>
+<li>为什么一个月是 30 进制？因为每过约 30 天，月亮有一次满月和一次朔月。</li>
+</ul>
+<p>每一种进制的背后，都对应一种物理意义。我为什么强调这个？因为咱们设计滑台的时候，这个滑台的系列做多长多短，一定是有物理意义在里面的。不同品牌各说各的，那是他们没想清楚。</p>
+<p>所以设计一个东西用多少进制，是特别巧妙的。进制的单位一定要锚到某个物理量上，你会发现东西越设计越顺。就跟电子工程师常说的 E 系列电阻一样：你会发现电阻的标称值永远不是整数。为什么不是整数？因为它要做到所有电阻通过串联、并联做分压，能分出 256 种电压压降，我需要让这种电平在电阻之间转换，所以它就能分出特别丰富的档位。咱们设计机械结构也是这样：有些东西看似不是整数，但往往会被当成一个进制的基础。</p>
+<p>“整数”这个概念本身就不是一个很严格的概念。比如 π，3.1415926……如果我说它是整数，在弧度制下它还真就是个“整数”：表述一个圆圈，半圈是 π，整圈是 2π，这时候 π 就是 1 个单位。π 这个数你别当它只是个无理数，它其实蕴含着无限的数据量。比如在座各位的手机号，你到 π 的前 100 万位里去搜，几乎一定能搜到，它后面是无限不循环的，从概率上讲，总有一段数字正好对上你的手机号。</p>
+<p>以此类推：假如我想存《红楼梦》这本书，把它用数字编码变成一段代码，那这段代码从概率上讲，肯定能在 π 的某一位开始出现。我现在就可以告诉你：从 π 的第多少位开始、到第多少位结束，把这段数据取出来就是《红楼梦》。能存《红楼梦》就能存《三国演义》《西游记》。那岂不是说，π 这一个数能把所有的书都装进去？</p>
+<p>所以现在有一类想法可以叫“无理数数论”：假如我写了一本书，想把这本书压缩成几个字节，那我就找到跟书里这段数据很相近的一段，反推出一个无理数，可能是 √2/3 之类的，它有一个非常简单的表达式。我告诉你这个表达式，再告诉你一个起点、一个终点，我这整本书就全给你了。这就是无理数的巧妙之处。</p>
+<p>也因此有个科幻故事，好像是刘慈欣的，他说宇宙里有个大神告诉人类怎么造时间机器，图纸就写在 π 里边：告诉你从哪一位开始、到哪一位结束，把这段数字取出来，时间机器的图纸就还原出来了。因为 π 这个数是神造的，是神诚心告诉你的。当然，这是小说。我这个人就是爱扯，诶，题外话说到这，咱们回来。</p>
+<h2 id="十六两的原因天平是二进制仪器">十六两的原因：天平是二进制仪器</h2>
+<p>接着说秤砣。为什么它的进制是十六？其实原理很简单：杆秤还没有发明的时候，我只有天平。</p>
+<p>在只有天平的情况下，怎么把粮食从大份分成小份？好比我有一杆秤、一个一斤的秤砣：我在右边放上一斤粮食，两边等平了。这时候把秤砣拿走，我还想再分，怎么办？我从左边抓一把放到右边，让两边重新齐平，一边就是半斤。再来一次，四分之一斤。以此类推，用这种二分法，我能分到 1/2、1/4、1/8、1/16。但我要让你分个五分之一？对不起，拿天平没办法。</p>
+<p>所以十六进制的基础是什么？是二进制。天平本质上就是二进制的：它只有“等”与“不等”两个状态，等是 1，不等是 0。咱们这个秤是一台二进制的秤，二进制自然只能表示 2 的幂，这就是十六两背后的数学。</p>
+<h2 id="测量完备性">测量完备性</h2>
+<p>十六两为什么一直用到解放前？就是因为天平这种东西的存在，天平具有测量完备性。这个概念我后面会反复说。</p>
+<p>什么叫完备性？你手里边拿着一台滑台：这台滑台精度够不够？是不是好的？我是不是需要借助其他设备才能知道？需要借助其他设备，这叫测量不完备；不需要，就叫测量完备。</p>
+<p>完备性是有等级的。以天平为例：</p>
+<p>第一层，自我功能的完备性。两边什么都不加，看上面那根针儿正不正，针儿不正，就代表天平坏了。我不需要借助任何检验设备，就能知道这台天平是好是坏。</p>
+<p>第二层，测量精度的完备性。左边放一个秤砣、右边放一份粮食，两边平了；这时候把秤砣拿走，粮食放这边、秤砣放那边，一看还是平的，这就是又一层完备性。所以在整个使用过程中，我只要保证秤砣是精确的，后面所有的测量都可以拿这台天平完成。也就是说，天平除了秤砣以外的其他机构，全都具有完备性。这个完备性，也是考量一个产品是否精确的重要标准。</p>
+<p>所以秦始皇才做了标准秤砣颁行各地。后来发现秤砣不是家家都有，怎么办？颁行“半两”铜钱，那个铜钱正好重半两，是国家的衡具。你只要从家里摸出一枚铜钱，就能校出一台天平：我有一个权，一次称出半两，两次称出一两，合在一起称出一斤；称出一斤，我就能做一个一斤的秤砣；再加一台天平，全天下的度量衡就都解决了。这就是精妙的完备性。</p>
+<p>所以看着手里是一枚硬币，其实它是国家统一法度的象征，以“半两”铜钱统一了中国。汉朝改成五铢，五铢也是重量单位（铢是两以下的单位）。以后大家看到秤砣，就觉得秤砣里面有神明，它代表着国家统一的象征。中间这块国宝，别看简单，依然是咱们中国顶级的文物。</p>
+<h2 id="杆秤plus-版天平">杆秤：Plus 版天平</h2>
+<p>然后说杆秤。杆秤就很接近我们设计的滑台了。你看着这东西很简单，现在菜市场上可能还见得到，其实里面就是数学原理，杠杆原理。但作为工程师，你不能停留在“初中生知道杠杆原理就行了”的水平，它可没那么简单。</p>
+<p>咱们一点一点说杆秤的原理：一个支点（提绳），手提着；前面一个挂钩，一根横梁；短臂、长臂，短臂前面挂被测物，长臂上有一个活动点，挂一个秤砣。这就相当于是 Plus 版的天平：如果左右两臂相等，它就是天平；加了这段不等臂杠杆，我就能称不同的重量，只要知道两臂的距离比例，距离不同，就知道实际重量是多少，因为两边力矩成比例。</p>
+<p>大家注意，这种秤有两个支点（两提绳）。支点不同，左右两臂的比例不同，量程不同，它有两种量程、两种进制。所以有了杆秤之后，就没必要再拘泥于十六两了：刻度取决于后面钉了多少个秤星、间距是多少，十两还是十六两我不在乎。</p>
+<p>消灭十六两秤的就是它，我再也不需要做均分了。但你想想，杆秤有没有完备性？如果我手里只有一个秤砣，它给我称出来的值准不准，我不知道。要让它有完备性，我必须拿它去称标准砝码：先有砝码，才能定上面的秤星。比如我有一斤、二斤、三斤的砝码，把秤星点上，再在每个区间里点均分点。所以杆秤的完备性比天平小了一档。</p>
+<p>所以咱们去菜市场复秤：要是拿天平，好办，看它左右相不相等，拿它自己的秤砣就行；要是杆秤，你非得自带一个秤砣（砝码）不可，才能验出它称得准不准。</p>
+<p>看完它的机构，我们就引入下面这几个测量概念。</p>
+<h2 id="精度的四个概念">精度的四个概念</h2>
+<p>我跟客户交流的时候，客户老问“你们这台子精度怎么样”。但客户说的精度到底是什么？我们的职责就是把客户口述的这些“精度”，落地到咱们滑台的机械结构上面。</p>
+<p>现在我有一杆秤，要描述它的精度。大家可能一想：秤的精度，是不是一个绝对定位精度就够了？反正我要几斤就是几斤，有个绝对定位精度不就行了？这是客户想要的。但咱们作为工程师，没这么简单。工程师要说四个概念：第一，不确定度；第二，分辨率；第三，重复精度；第四，绝对定位精度。</p>
+<h3 id="一不确定度">（一）不确定度</h3>
+<p>什么是不确定度？你拿着秤杆，左右拨这个秤砣：在两边平衡的情况下，秤砣能挂在秤杆上，因为秤杆是水平的；要是不水平，秤砣挂不住，“啪啦”就掉下来了，这叫秤杆失稳。这个情况大家都明白。</p>
+<p>这个过程叫什么？叫可验证性。如果是天平，两边平不平，我看上面那根针儿跟刻度对没对着：对着，就代表平了；如果是杆秤，秤砣挂得住，就代表秤杆平了。秤砣挂不挂得住，本身就是对秤杆是否水平的一个验证。我再说一遍，秤砣能不能挂住，就是对秤杆水平的验证。所以它连水平仪都不需要。</p>
+<p>然后来了另一个问题：如果秤杆一直在上下浮动，我的手在哆嗦，位置永远不确定，会发生什么？秤砣永远挂不住，测量失效。</p>
+<p>所以建立测量系统之前，第一件事就是测不确定性。假如秤砣与秤杆之间摩擦力为零、绳子摩擦力为零，那就代表秤杆必须绝对水平才挂得住。反过来说：秤砣跟秤杆之间的摩擦力，决定了秤杆允许跳动的幅度。摩擦力越小，跳动允许度越小，秤的不确定性才越小。你可能没想到：测量的不确定性，其实取决于这两个接触面之间的摩擦力，同时也取决于你的手哆嗦不哆嗦。不确定性大的话，后面所有东西免谈。</p>
+<p>降低不确定性有几种办法：</p>
+<p>第一，隔振。中间这个支点不拿手拿，挂在一个很稳定的框架上，这叫隔振，把手的震动去掉。想再提高，可以在框架上再加一级隔振，再做个罩子避免风吹，风一吹秤砣就偏了。</p>
+<p>第二，单自由度约束。注意中间永远是一根绳子，绝不会在这儿焊一根杆儿。为什么用绳子？数学上管绳子叫单向受力：绳只有拉力，不可能有压力，一有压力，绳就松了。绳也没有力偶、没有力矩，只有一个方向的力。所以一根绳叫单自由度约束：六个自由度（三个平移加俯仰、偏航、翻滚）里只约束一个 Z，其余五个全是自由的。只约束一个维度，其他五个不约束也不测量。约束的维度越紧，其余维度越松，反而能降低不确定性，因为只约束一个，比同时约束六个容易得多。这就是中间为什么是一根线。</p>
+<p>把不确定性确定之后，才能决定摩擦力允许多小。如果不确定性没建立、不知道自己是多少，就推算不出秤杆上下跳动多少；不知道跳动量，就定不了摩擦要求。秤杆带一点角度而不往前滑，这在初中物理里叫摩擦角，最大摩擦角 tan θ = μ（摩擦系数），看谁还记得。瞧，这就是记得扎实的。摩擦力越小，摩擦角越小（tan 正比关系），秤杆上下允许跳动的量，就是最大容许摩擦角对应的量。</p>
+<p>机构确定 → 确定秤杆允许跳动量 → 算出秤砣与秤杆之间允许的最大摩擦力 → 按此去找材料。这才是咱们说的数据链。提高了不确定性这项指标，才能提高秤砣挂点位置的分辨能力。</p>
+<h3 id="二分辨率">（二）分辨率</h3>
+<p>分辨率：挂秤砣的这根线看着细，但它是有宽度的。线压在刻度上，把线的宽度做窄一点，读数就精确一点。还可以加游标，跟游标卡尺似的，增大读数精度；还可以加光栅尺，不看秤星，直接测长度，也可以。这些都能提高测量的分辨率。但有一条：分辨率的数值一定要比不确定性大（这个道理后面展开）。</p>
+<p>提高分辨率有两种方法：一是改进读数方法；二是提高系统灵敏度。已知这杆秤有两个支点：支点挪到一边，臂比变化，灵敏度变大；挪到另一边，灵敏度变小。系统灵敏度越高，分辨率越高，但量程会降低。所以说分辨率一定要跟量程相关，灵敏度和量程之间，往往是一把双刃剑。</p>
+<h3 id="三重复定位精度">（三）重复定位精度</h3>
+<p>多次测量同一个样品，会不会得出同样的结果？这叫重复定位精度。它取决于什么？首先，不确定性会不会影响最终读数？会。分辨率也影响读数。第三，刚才说的摩擦角：摩擦角存在的时候，秤砣往前推一点能停、往后推一点也能停，都可能影响读数。这些读数的分散，就是重复精度。</p>
+<p>注意：说了这么多，全都跟绝对精度无关。好比我不是想量一个商品一斤卖多少钱，只想量两个东西谁重谁轻，对不起，已经够了。不在乎绝对精度、只在乎谁对谁错（谁轻谁重）的情况下，前面这些就够了。</p>
+<h3 id="四绝对定位精度">（四）绝对定位精度</h3>
+<p>引入绝对精度，一定是为了有一个第三方测量。没有第三方、不为了交易，就不要绝对定位精度；一定是有了第三方，才有绝对定位精度。这时候在秤上压一个标准砝码，才有了“绝对精度”这一说。假如咱们设计的系统里不存在第三方、自己形成一个闭环，对不起，整个系统里绝对精度是无意义的。</p>
+<h3 id="四个概念的验证与量级">四个概念的验证与量级</h3>
+<p>再一级一级往回说可验证性：这个东西完备不完备？</p>
+<ul>
+<li>不确定性的完备性：取决于秤杆能不能水平。杆永远水平不了，不确定性的完备性就无法验证。</li>
+<li>分辨率怎么验证？分辨率是算出来的。咱们老说步进电机细分：八细分、十六细分，有的 TMC 驱动出厂标 128 细分，电机走一步，滑台才走多少纳米。客户问：“你这多少纳米，值准不准？”我说你甭管准不准，我走一万步是一毫米。一步多少我测不了，但走一万步我量得出。又比如一杆秤，有一斤、二斤两个砝码，在一斤和二斤之间等分十份，那 1/10 就是分辨率，算出来的。怎么验证分辨率有效？只要分辨率比不确定性大就行。</li>
+</ul>
+<p>这句话怎么解释？假如我有一台滑台，由于环境震动，它一直在 ±0.5 微米地跳。我让滑台往前走 0.1 微米：上一秒位置是 0，此刻在 ±0.5 微米震动里；走 0.1 微米的时候，正好震动往回退了 0.5 微米，最后实测结果是 −0.4 微米。在外行眼里就是：我让它往前走 0.1，它实际退了 0.4，滑台失控了。这个分辨率就是无效分辨率，被不确定性吃掉了。所以说分辨率有两句话：第一句，算出来的分辨率是多少；第二句，这个分辨率有效还是无效。有效无效很取决于环境：环境震动大、不确定性大，有效分辨率就很低。有效分辨率取决于环境。</p>
+<ul>
+<li>重复定位精度怎么验证？对，多次测量，看读数的跳动值。注意，重复性的数值一定比分辨率差（数值更大），不确定性的数值也比分辨率大。</li>
+<li>绝对定位精度：没什么可说的，没有秤砣、没有砝码的情况下，绝对定位精度完全无法评估。</li>
+</ul>
+<p>这四个东西差四个量级。量级大家没概念的话，拿工资说：一个量级是十倍，四个量级就是月薪一万和月薪一亿的区别，月薪一亿是马云的日子，月薪一万是咱们的日子。但在同一台滑台上，这四个指标就是差四个量级。所以跟客户聊精度，最常犯的就是量级错误，你不知道他要的到底是哪一个。</p>
+<h2 id="老太太穿针基准闭环与有效分辨率">老太太穿针：基准、闭环与有效分辨率</h2>
+<p>我给别人讲精度，特别喜欢说一个场景：一个老太太，戴着老花镜，左手拿针、右手拿线。线要是比 0.1 毫米粗就穿不进去，针眼很小，就差那 0.1 毫米。但老太太“啪嗒”一下就穿进去了。</p>
+<p>这时候我给你提个要求：你的手上下运动，每次只动 1 毫米，能不能做到？做不到。每次都精确 1 毫米，0.5 都不行，你控制不了手的 1 毫米。给你一支笔，让你在纸上每隔 1 毫米点一个点，你也点不准。可为什么 0.1 毫米的针眼，你却穿得进去？</p>
+<p>这就是两种描述精度的方式，我刚才在里面偷换了概念。跟客户讲精度的时候，特别容易在讲的过程中偷换概念；一偷换，两个东西就永远对不上。咱们一个一个拆。</p>
+<p>第一问：手的精度是毫米级的，为什么穿得进 0.1 毫米的针？ 偷换的是哪个概念？分辨率、重复精度、绝对定位精度，各是哪个？手动的时候，你控制胳膊有一个最小移动量，小不到哪儿去；穿针的时候你用的是手指。那我让你拿手指每隔 1 毫米点一个点，你也点不出来。为什么穿得进去？因为穿针不是“走 0.1 毫米”：那个量不是你手动出来的，它有一个参考、有一个针眼的基准，你照着基准去对。所以穿针属于分辨率的范畴：动多少、按基准对多少。</p>
+<p>第二问：闭上眼为什么穿不进去？ 手还是那双手，分辨率没变，基准（针眼）也没变。为什么睁眼穿得进、闭眼穿不进？因为闭环断了。我们老说分辨率 0.1 毫米：闭眼我想走 0.1，到位没到位，我需要一个第三方测量，这个第三方就是眼睛。假如手没准，想走 0.1 实际走了 0.2，眼睛看见偏差，下一轮修回来。</p>
+<p>第三问：咱俩都睁着眼，你拿针、我拿线，对穿，穿得进去吗？ 咱俩都尽量不动、尽量稳。穿不进去。为什么？因为不是一个刚体。你有你的测量基准，我有我的，基准不一样。咱俩分辨率都很高、重复精度都很高，但对不到一个基准上。这就是没闭环，设计系统时最忌讳的就是不在一个基准上。</p>
+<p>第四问：老太太为什么两只手碰在一起穿？ 她为什么不分开穿？两手碰着，针和线成一个整体，相对稳。学不好数理化，生活中处处是魔法，连老太太都明白这个。</p>
+<p>第五问：老太太得了帕金森，手一直哆嗦，偏要穿针，怎么办？ 有人说“给她绑上”。其实你看：就算两只手一直哆嗦，把手跟下巴碰在一起，照样穿得进去。手相对头在哆嗦，但眼睛看着这个过程，构成局部闭环。你把刚才这些概念都用上，就想通了。</p>
+<p>其实咱们设计滑台、设计系统，就是这几个概念绕来绕去。说所有系统的时候，脑子里都要出现这个穿针引线的老太太；装配滑台的时候，都要想这些概念。咱们一个问题一个问题地对：</p>
+<ul>
+<li>老太太的手一定哆嗦，这个哆嗦叫不确定度。</li>
+<li>她最稳能稳到的最小步距，是分辨率；而这个分辨率是不是有效，看场合，这叫有效分辨率。</li>
+<li>老太太的不确定性假如是 0.05 毫米（手不动时的摆动量），分辨率 0.1 毫米，不确定性吃不掉分辨率，分辨率有效。</li>
+</ul>
+<p>再说基准。咱们老说距离，离基准越远，误差越大。让老太太站起来，手相对地面的不确定性，要经过肩、肘、腕、胯、膝一路传递，每个关节都有不确定性，到手上就是大误差；让她坐下，其他关节的误差被消掉，误差就小很多。降低不确定性的方法，就是降低传递；不确定性降了，有效分辨率就高了。很可能老太太手的最小移动量一直是 0.1 毫米，但站起来时全身不确定性不止 0.1，0.1 的分辨率就变成了无效分辨率；坐下之后，不确定性降了，0.1 才变成有效分辨率。所以老说：分辨率是算出来的，有效分辨率跟应用场合直接相关。</p>
+<p>再具体说基准。刚才说针以地面为基准，中间隔着肩、腕、膝盖、椅子一直到地面。如果基准不是地面，而是手里这根针：两只手碰在一起形成整体，这两样东西的基准就与胳膊、腿、膝盖、大地无关了，它们构成一个刚体。基准更近了，传递就少了，少的是位置不确定性。所以两手碰在一起才穿得进。手一直哆嗦怎么办？跟下巴碰在一起，因为手的哆嗦是相对头的，眼睛看着这个闭环过程。</p>
+<p>关于分辨率，还有一点：实际分辨率不是等间隔的。台子分辨率假如是一微米，别指望第一次走一微米、第二次还是一微米、次次一微米。你要这么要求，对不起，你要的不是分辨率，是绝对定位精度。我说的分辨率是什么？保证每次都是单调的：你让我往前走 0.1，我走的一定是正值不是负值。只要单调，睁着眼迭代，多少次都穿得进去，因为眼睛在做趋势对比，看的是方向。方向对，就能收敛。所以 0.1 毫米的手分辨率，不是每次都能点准 0.1 这个点，而是每次走最小距离时，位置一定单调、沿一个方向、可控。可控就能闭环修正到位；不可控，分辨率无效。这是核心的一点。</p>
+<p>而两手一碰，基准又变了：测量基准、目标基准、运动基准构成一个刚体，不确定性又小了。回到刚才那个例子：他拿针、我拿线，各有各的基准，对不到一起。设计系统的时候，特别忌讳不在一个基准上。</p>
+<p>所以以后谈论问题，先问：不确定性多少？分辨率多少？重复定位精度多少？而一旦说到重复定位精度和绝对定位精度，其实是在讲基准，只有这两个精度需要基准，不同基准下数值不一样。我这样穿针，基准在手上；那样穿针、谁都不挨着，基准就是大地，或者说是我的身体，从身体传递到头、再传递到手，不确定性就大了。所以谈重复性就是在谈基准：基准离被测样品越近，精度越高。</p>
+<p>这就是咱们一起描述一个产品时的几个概念。跟客户聊天，脑子里要想一个老太太在穿针；设计滑台，要想自己在设计一杆秤。说的时候永远离不开四个概念：不确定度、分辨率、重复定位精度、绝对定位精度；同时要扪心自问：自己这些东西的可验证性如何？今天要讲的就是这四个概念。大家提点问题吧，别叫我一个人说。</p>
+<h2 id="落到滑台设计">落到滑台设计</h2>
+<p>其实就围绕这四个概念。落到滑台上：假如我设计一台手动滑台，机械式的，上面装一个微分头。微分头是什么？是咱们的读数基准，是精度来源，可以认为它的精度是全系统最高的，它的读数我认可。它就是我们的秤砣、我们的秤杆。</p>
+<p>我要设计一杆秤，要对精度来源干什么？对它的约束要最小。想到秤钩上面挂的那根绳没有？如果上面不是绳、焊一根铁棍子，秤杆倒是不哆嗦了、也结实了，但精度没了。谁是精度来源，谁身上的约束就要最小。</p>
+<p>到手动滑台上：微分头顶着移动板前后运动；加一根拉簧，就是复位拉簧。没有微分头顶着的时候，移动板靠拉簧拉着，可以前后自由移动。微分头和移动板之间的连接是什么？没有连接：在这儿嵌一颗钢球，微分头的测头是很硬的平面，球跟面是点接触，单自由度约束。这就是秤钩上那根线。</p>
+<p>注意为什么这么做：微分头的精度在轴向上，所以只在轴向给约束，约束就是那个点，再加一根拉簧，其他地方一概不给约束。给了约束，就把它的精度浪费了。设计滑台时脑子里要有这个概念：谁是精度来源，给谁的约束越小越好。</p>
+<h3 id="不确定性出在哪里">不确定性出在哪里？</h3>
+<p>想提高分辨率，就要减小位置不确定性。这台滑台里，什么东西容易产生位置不确定性？有人说固定微分头的那个座可能产生不确定性。但微分头座跟底板是一体的、螺钉连接。不确定性要先想哪里是强约束、哪里是弱约束。螺钉连接是强约束；真正的弱约束是导轨，这台用的是交叉滚子导轨。</p>
+<p>咱们老生常谈力矩刚性的问题：如果我拧这个台面，台面力矩刚性不好，就相当于台面会发生随机运动，这个随机运动就是位置不确定性。假如微分头顶着台面“往前走了一微米”，我心目中是台面平移了一微米；但其实很可能，是台面往上拱了一微米。导轨之间存在间隙的话，拉簧一拉，不是往前走一微米，而是往上拱一微米。这时候不确定性就把分辨率吃掉了。</p>
+<h3 id="重复定位精度靠谁">重复定位精度靠谁？</h3>
+<p>这个系统想提高重复定位精度，哪个地方最重要？导轨（把不确定性压下去），还有复位拉簧。复位拉簧是为了走了之后回来还能复位。所以好多人嚷嚷“拉簧力量太小”，拉簧力量太小的表现形式就是回不到位，直接影响重复定位精度。</p>
+<h3 id="绝对定位精度怎么提">绝对定位精度怎么提？</h3>
+<p>那位说了：我要提高绝对定位精度怎么办？微分头是精度来源。第一，让微分头自身没有多余约束，约束越小越好。还有一点：微分头安装得正，它的轴线要跟导轨运动方向严格平行。否则你歪着装，绝对定位精度就会变差。提高绝对定位精度，本质是提高“精度来源那个维度”和“运动这个维度”之间的传递性：传递方向跟导轨方向严格平行，而且同轴；不光这边平行，两端都要平行。</p>
+<p>那这个系统里该提高哪个零件的精度？导轨、微分头座；还有把导轨间隙想办法缩小。间隙变小是压不确定性：不确定性减小 → 提高重复定位精度 → 各项精度都提上来之后，整体提高绝对定位精度。而绝对定位的核心一点，实际在微分头座上。</p>
+<h3 id="微分头座一个零件还是两个零件">微分头座：一个零件还是两个零件</h3>
+<p>要提高微分头座这一项，微分头座跟大底板之间就得是一个零件。做成两个零件，等于当时就没打算把绝对定位精度做高。为什么？因为这台子没必要：我的目的是调整，不是拿它当尺子用。按调整的用途，加工方案就做成两个零件。</p>
+<p>但我要提高绝对定位精度，微分头座跟底板就必须是一个零件，并且一刀加工出来，才能保证两个面的严格平行。</p>
+<p>今天就讲到这儿，散会。</p></div></article><nav class="post-nav post-hr mt-12 pt-8" data-astro-cid-ruv7hgo6><a href="/posts/20260928-金融的劣根性/" class="post-nav-item post-nav-prev" data-astro-cid-ruv7hgo6><span class="post-nav-label" data-astro-cid-ruv7hgo6>← 上一篇</span><span class="post-nav-title" data-astro-cid-ruv7hgo6>金融的劣根性</span></a></nav><aside class="post-toc-slot" data-astro-cid-ruv7hgo6><nav class="post-toc post-toc-rail" aria-label="文章目录" data-astro-cid-u7wjlsqt><p class="post-toc-title" data-astro-cid-u7wjlsqt>目录</p><ol class="post-toc-list" data-astro-cid-u7wjlsqt><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#为什么要统一提法" data-astro-cid-u7wjlsqt>为什么要统一“提法”</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#秤砣统一度量衡的起点" data-astro-cid-u7wjlsqt>秤砣：统一度量衡的起点</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#进制背后都有物理意义" data-astro-cid-u7wjlsqt>进制背后都有物理意义</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#十六两的原因天平是二进制仪器" data-astro-cid-u7wjlsqt>十六两的原因：天平是二进制仪器</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#测量完备性" data-astro-cid-u7wjlsqt>测量完备性</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#杆秤plus-版天平" data-astro-cid-u7wjlsqt>杆秤：Plus 版天平</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#精度的四个概念" data-astro-cid-u7wjlsqt>精度的四个概念</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#一不确定度" data-astro-cid-u7wjlsqt>（一）不确定度</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#二分辨率" data-astro-cid-u7wjlsqt>（二）分辨率</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#三重复定位精度" data-astro-cid-u7wjlsqt>（三）重复定位精度</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#四绝对定位精度" data-astro-cid-u7wjlsqt>（四）绝对定位精度</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#四个概念的验证与量级" data-astro-cid-u7wjlsqt>四个概念的验证与量级</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#老太太穿针基准闭环与有效分辨率" data-astro-cid-u7wjlsqt>老太太穿针：基准、闭环与有效分辨率</a></li><li class="post-toc-item" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#落到滑台设计" data-astro-cid-u7wjlsqt>落到滑台设计</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#不确定性出在哪里" data-astro-cid-u7wjlsqt>不确定性出在哪里？</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#重复定位精度靠谁" data-astro-cid-u7wjlsqt>重复定位精度靠谁？</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#绝对定位精度怎么提" data-astro-cid-u7wjlsqt>绝对定位精度怎么提？</a></li><li class="post-toc-item is-sub" data-astro-cid-u7wjlsqt><a class="post-toc-link" href="#微分头座一个零件还是两个零件" data-astro-cid-u7wjlsqt>微分头座：一个零件还是两个零件</a></li></ol></nav></aside></div></main></div></div><!-- 阅读进度条（顶部） + 回到顶部按钮 --><div id="readingProgress" class="reading-progress" aria-hidden="true" data-astro-cid-z4jru4n3></div><button id="backToTop" class="back-to-top" aria-label="回到顶部" title="回到顶部" tabindex="-1" data-astro-cid-z4jru4n3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-z4jru4n3><polyline points="18 15 12 9 6 15" data-astro-cid-z4jru4n3></polyline></svg></button><script>
+      (function () {
+        // 阅读进度条 + 回到顶部（兼容桌面 .main-content 滚动与移动端 window 滚动）
+        var progress = document.getElementById('readingProgress');
+        var backTop = document.getElementById('backToTop');
+        if (!progress || !backTop) return;
+        var main = document.querySelector('.main-content');
+        var raf = 0;
+
+        function getScroller() {
+          if (main) {
+            var ov = getComputedStyle(main).overflowY;
+            if (ov === 'auto' || ov === 'scroll') return main;
+          }
+          return window;
+        }
+
+        function update() {
+          raf = 0;
+          var scroller = getScroller();
+          var el = scroller === window ? document.documentElement : scroller;
+          // is:inline 纯 JS：用 'in' 运行时收窄，规避 Window/Element 联合类型上 scrollTop 的 TS 报错
+          var scrollTop = scroller === window
+            ? (window.scrollY || document.documentElement.scrollTop || 0)
+            : ('scrollTop' in el ? el.scrollTop : 0);
+          var max = 'scrollHeight' in el ? el.scrollHeight - el.clientHeight : 0;
+          var pct = max > 0 ? Math.min(1, Math.max(0, scrollTop / max)) : 0;
+          // clip-path 裁剪：元素全宽渲染，只显示已读部分，避免缩放模糊
+          progress.style.clipPath = 'inset(0 ' + ((1 - pct) * 100).toFixed(2) + '% 0 0)';
+          var show = scrollTop > 600;
+          backTop.style.opacity = show ? '1' : '0';
+          backTop.style.pointerEvents = show ? 'auto' : 'none';
+          // 透明态（opacity:0）元素仍在 Tab 序列里：键盘用户会停在一个完全看不见的
+          // 按钮上，回车还会触发平滑滚动。展示状态与 Tab 站必须同步摘挂
+          // （review 2026-09-16 无障碍审查第 3 条）
+          backTop.tabIndex = show ? 0 : -1;
+        }
+
+        function onScroll() {
+          if (raf) return;
+          raf = requestAnimationFrame(update);
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        if (main) main.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll, { passive: true });
+        update();
+
+        backTop.addEventListener('click', function () {
+          var scroller = getScroller();
+          // 显式 behavior:'smooth' 的优先级高于 CSS 的 scroll-behavior，
+          // 故 reduced-motion 下必须在这里判偏好，否则全局兜底管不到（review 2026-10-01 实测）
+          var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (scroller === window) window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+          else scroller.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+        });
+      })();
+    </script><script type="module" src="/_astro/BaseLayout.astro_astro_type_script_index_0_lang.pNpJcjJW.js"></script></body></html>
