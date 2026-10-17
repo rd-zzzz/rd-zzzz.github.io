@@ -1,0 +1,64 @@
+# 张偌迪的博客 robots.txt
+# 策略：全部内容开放抓取——个人博客，欢迎搜索引擎收录与 AI 引用，不设任何抓取限制
+#
+# Content Signals（https://contentsignals.org/）：三类用途全部授权
+#   search=yes    允许建立搜索索引、返回链接与摘要
+#   ai-input=yes  允许作为 AI 实时上下文（RAG / grounding / AI 搜索答案引用全文）
+#   ai-train=yes  允许用于训练或微调 AI 模型
+#
+# ⚠️ 本文件的声明会被 Cloudflare 托管内容覆盖：控制台若开启
+#    「Set your preference to block training in robots.txt」，Cloudflare 会在本文件
+#    之前前置注入 ai-train=no 与一批 AI 爬虫 Disallow（GPTBot/ClaudeBot/CCBot 等）。
+#    需到 Security > Settings（筛选 Bot traffic）关闭该开关，本文件才是最终生效内容。
+
+User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+# 管理后台的回收站目录：被删除的文章不应再被收录（防御性配置，避免删除后仍残留索引）
+Disallow: /trash/
+
+# ── AI 爬虫逐个点名放行 ──────────────────────────────────────────
+# 上面的 User-agent: * 已全站放行，这里再显式点名有两个作用：
+#   1. 覆盖只匹配自己名字、不回落到 * 组的爬虫实现；
+#   2. 让 Cloudflare AI Crawl Control 的 robots.txt 合规追踪、以及各类
+#      AI 就绪度扫描器（如 isitagentready.com 的 aiBotRules 检查）识别到显式声明。
+# 同组内多个 User-agent 行共享下方指令（RFC 9309 允许），故无需逐个重复。
+
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: anthropic-ai
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Google-CloudVertexBot
+User-agent: Applebot
+User-agent: Applebot-Extended
+User-agent: Amazonbot
+User-agent: Bytespider
+User-agent: CCBot
+User-agent: cohere-ai
+User-agent: cohere-training-data-crawler
+User-agent: DuckAssistBot
+User-agent: MistralAI-User
+User-agent: FacebookBot
+User-agent: meta-externalagent
+User-agent: meta-externalfetcher
+User-agent: Omgilibot
+User-agent: ImagesiftBot
+User-agent: Diffbot
+User-agent: AI2Bot
+User-agent: YouBot
+User-agent: CloudflareBrowserRenderingCrawler
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+# 与 * 组保持一致：回收站同样不对 AI 爬虫开放
+Disallow: /trash/
+
+# 站点地图：XML 供 Google/必应等主流引擎；TXT（每行一个 URL）供百度站长平台直接提交
+Sitemap: https://rodneyzhang.com/sitemap.xml
+Sitemap: https://rodneyzhang.com/sitemap.txt
