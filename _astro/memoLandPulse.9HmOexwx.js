@@ -1,0 +1,1 @@
+function e(e){let t=e.querySelector(`.memo-display`);if(!t)return;document.querySelectorAll(`.memo-land`).forEach(e=>e.classList.remove(`memo-land`)),t.offsetWidth,t.classList.add(`memo-land`);let n=window;window.clearTimeout(n.__landPulseTimer),n.__landPulseTimer=window.setTimeout(()=>t.classList.remove(`memo-land`),1300)}export{e as t};
