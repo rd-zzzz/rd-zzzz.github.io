@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- 默认分享图：品牌绿底居中一枚 3×3 热力网格标记（与 components/BrandMark.astro 同源，
+       比例按 32 画布 ×15 放大）。亮格为 0 起编号的 1、2、3、8 位（上排右二、中排左一、下排右一），
+       亮格取站点页面暖白 #f8f4ec（乳白）而非纯白——纯白在绿底上偏刺眼，暖白与全站暖白体系一致，
+       对绿底仍有 5.10:1。
+       图内不放站名字样——微信移动端卡片按中心方形取到约 64px 的缩略图，任何 20 字符的英文
+       在那一档都会糊成灰斑；站名由卡片自身的文字承担。
+       标记落在中心 630×630 安全区内（四周各留 75px），方形裁切后仍完整。
+       改几何后须重跑 node scripts/gen-icons.mjs 刷新 og-default.png（该 PNG 在
+       optimize-images 的 SKIP 名单里，不参与构建期压缩，尺寸/体积以源文件为准）；
+       脚本会断言本文件的填色集合恰为 #122c1c / #397354 / #4a8a6c / #f8f4ec -->
+  <rect width="1200" height="630" fill="#397354"/>
+  <rect x="360" y="75" width="480" height="480" rx="90" fill="#4a8a6c"/>
+  <g fill="#122c1c">
+    <rect x="426" y="141" width="96" height="96" rx="27"/>
+    <rect x="552" y="267" width="96" height="96" rx="27"/>
+    <rect x="678" y="267" width="96" height="96" rx="27"/>
+    <rect x="426" y="393" width="96" height="96" rx="27"/>
+    <rect x="552" y="393" width="96" height="96" rx="27"/>
+  </g>
+  <rect x="552" y="141" width="96" height="96" rx="27" fill="#f8f4ec"/>
+  <rect x="678" y="141" width="96" height="96" rx="27" fill="#f8f4ec"/>
+  <rect x="426" y="267" width="96" height="96" rx="27" fill="#f8f4ec"/>
+  <rect x="678" y="393" width="96" height="96" rx="27" fill="#f8f4ec"/>
+</svg>
